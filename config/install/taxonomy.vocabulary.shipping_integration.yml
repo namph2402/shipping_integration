@@ -1,0 +1,8 @@
+langcode: vi
+status: true
+dependencies: {  }
+name: 'Config shipping integration'
+vid: shipping_integration
+description: null
+weight: 0
+new_revision: false

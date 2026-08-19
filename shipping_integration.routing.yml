@@ -1,0 +1,15 @@
+entity.shipping_type.settings:
+  path: 'admin/structure/shipping-type'
+  defaults:
+    _form: '\Drupal\shipping_integration\Form\ShippingTypeSettingsForm'
+    _title: 'Shipping type'
+  requirements:
+    _permission: 'administer shipping_type'
+
+shipping_integration.shipping:
+  path: '/shipping-integration/shipping'
+  defaults:
+    _title: 'Shipping'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingController'
+  requirements:
+    _permission: 'access content'

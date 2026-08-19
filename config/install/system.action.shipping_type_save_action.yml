@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - shipping_integration
+id: shipping_type_save_action
+label: 'Save shipping types'
+type: shipping_type
+plugin: entity:save_action:shipping_type
+configuration: {  }

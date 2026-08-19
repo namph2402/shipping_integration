@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * @file
+ * Shipping integration module.
+ */
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Provides a shipping address entity type.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Render\Element;
+
+/**
+ * Implements hook_theme().
+ */
+function shipping_integration_theme(): array {
+  return [
+    'shipping_address' => ['render element' => 'elements'],
+    'shipping_order' => ['render element' => 'elements'],
+    'shipping_type' => ['render element' => 'elements'],
+  ];
+}
+
+/**
+ * Prepares variables for shipping address templates.
+ *
+ * Default template: shipping-address.html.twig.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - elements: An associative array containing
+ *     the shipping address information and any fields attached to the entity.
+ *   - attributes: HTML attributes for the containing element.
+ */
+function template_preprocess_shipping_address(array &$variables): void {
+  $variables['view_mode'] = $variables['elements']['#view_mode'];
+  foreach (Element::children($variables['elements']) as $key) {
+    $variables['content'][$key] = $variables['elements'][$key];
+  }
+}
+
+/**
+ * Prepares variables for shipping order templates.
+ *
+ * Default template: shipping-order.html.twig.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - elements: An associative array containing the shipping order information and any
+ *     fields attached to the entity.
+ *   - attributes: HTML attributes for the containing element.
+ */
+function template_preprocess_shipping_order(array &$variables): void {
+  $variables['view_mode'] = $variables['elements']['#view_mode'];
+  foreach (Element::children($variables['elements']) as $key) {
+    $variables['content'][$key] = $variables['elements'][$key];
+  }
+}
+
+/**
+ * Prepares variables for shipping type templates.
+ *
+ * Default template: shipping-type.html.twig.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - elements: An associative array containing the shipping type information and any
+ *     fields attached to the entity.
+ *   - attributes: HTML attributes for the containing element.
+ */
+function template_preprocess_shipping_type(array &$variables): void {
+  $variables['view_mode'] = $variables['elements']['#view_mode'];
+  foreach (Element::children($variables['elements']) as $key) {
+    $variables['content'][$key] = $variables['elements'][$key];
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function shipping_integration_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== "taxonomy_term"
+    || $entity->bundle() !== "config_shipping"
+    || !empty($entity->skip_call_token)
+  ) {
+    return;
+  }
+
+  $langcode = $entity->language()->getId();
+
+  /** @var \Drupal\taxonomy\TermInterface $entity */
+  $translation = $entity->hasTranslation($langcode)
+    ? $entity->getTranslation($langcode)
+    : $entity;
+
+  $config = [
+    "shipping_type" => $entity->get("field_shipping_type")->entity,
+    "shipping_host" => $entity->get("field_shipping_host")->uri,
+    "shipping_username" => $entity->get("field_shipping_username")->value,
+    "shipping_password" => $entity->get("field_shipping_password")->value,
+    "shipping_code" => $entity->get("field_shipping_code")->value,
+    "shipping_token" => $entity->get("field_shipping_token")->value,
+  ];
+
+  $data_token = \Drupal::service("shipping_integration.handle_shipping")->getToken($config);
+
+  if (empty($data_token["success"])) {
+    return;
+  }
+
+  $translation->set("field_shipping_token", $data_token["token"]);
+  \Drupal::messenger()->addStatus(t("Get token successfully"));
+}

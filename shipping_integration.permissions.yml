@@ -1,0 +1,13 @@
+administer shipping_address types:
+  title: 'Administer shipping address types'
+  description: 'Maintain the types of shipping address entity.'
+  restrict access: true
+
+administer shipping_order types:
+  title: 'Administer shipping order types'
+  description: 'Maintain the types of shipping order entity.'
+  restrict access: true
+
+administer shipping_type:
+  title: 'Administer shipping types'
+  restrict access: true

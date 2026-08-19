@@ -1,0 +1,16 @@
+services:
+  logger.channel.shipping_integration:
+    parent: logger.channel_base
+    arguments: ["shipping_integration"]
+
+  plugin.manager.shipping_providers:
+    class: Drupal\shipping_integration\ShippingProvidersPluginManager
+    parent: default_plugin_manager
+
+  shipping_integration.handle_shipping:
+    class: Drupal\shipping_integration\Service\HandleShipping
+    arguments: ["@plugin.manager.shipping_providers", "@entity_type.manager", "@entity_field.manager", "@file_system", "@file.repository", "@logger.channel.shipping_integration", "@token", "@database"]
+
+  shipping_integration.synchronize_addresses:
+    class: Drupal\shipping_integration\Service\SynchronizeAddresses
+    arguments: ["@plugin.manager.shipping_providers", "@entity_type.manager", "@logger.channel.shipping_integration", "@database"]

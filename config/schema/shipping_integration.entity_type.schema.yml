@@ -1,0 +1,25 @@
+shipping_integration.shipping_address_type.*:
+  type: config_entity
+  label: 'Shipping address type config'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    uuid:
+      type: string
+
+shipping_integration.shipping_order_type.*:
+  type: config_entity
+  label: 'Shipping order type config'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    uuid:
+      type: string

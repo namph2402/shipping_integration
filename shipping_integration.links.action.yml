@@ -1,0 +1,29 @@
+shipping_address.type_add:
+  title: 'Add shipping address type'
+  route_name: entity.shipping_address_type.add_form
+  appears_on:
+    - entity.shipping_address_type.collection
+
+shipping_address.add_page:
+  title: 'Add shipping address'
+  route_name: entity.shipping_address.add_page
+  appears_on:
+    - entity.shipping_address.collection
+
+shipping_order.type_add:
+  title: 'Add shipping order type'
+  route_name: entity.shipping_order_type.add_form
+  appears_on:
+    - entity.shipping_order_type.collection
+
+shipping_order.add_page:
+  title: 'Add shipping order'
+  route_name: entity.shipping_order.add_page
+  appears_on:
+    - entity.shipping_order.collection
+
+shipping_type.add_form:
+  title: 'Add shipping type'
+  route_name: entity.shipping_type.add_form
+  appears_on:
+    - entity.shipping_type.collection

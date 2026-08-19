@@ -1,0 +1,5 @@
+name: 'Shipping integration'
+type: module
+description: 'Tích hợp đơn vị vận chuyển.'
+package: Custom
+core_version_requirement: ^10 || ^11

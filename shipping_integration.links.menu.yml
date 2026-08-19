@@ -1,0 +1,35 @@
+entity.shipping_address_type.collection:
+  title: 'Shipping address types'
+  description: 'Manage and CRUD actions on Shipping address type.'
+  parent: system.admin_structure
+  route_name: entity.shipping_address_type.collection
+
+entity.shipping_address.collection:
+  title: 'Shipping addresses'
+  description: 'List of shipping addresses.'
+  route_name: entity.shipping_address.collection
+  parent: system.admin_content
+
+entity.shipping_order_type.collection:
+  title: 'Shipping order types'
+  description: 'Manage and CRUD actions on Shipping order type.'
+  parent: system.admin_structure
+  route_name: entity.shipping_order_type.collection
+
+entity.shipping_order.collection:
+  title: 'Shipping orders'
+  description: 'List of shipping orders.'
+  route_name: entity.shipping_order.collection
+  parent: system.admin_content
+
+entity.shipping_type.settings:
+  title: 'Shipping type'
+  description: 'Configure a Shipping type entity type.'
+  route_name:  entity.shipping_type.settings
+  parent: system.admin_structure
+
+entity.shipping_type.collection:
+  title: 'Shipping types'
+  description: 'List of shipping types.'
+  route_name: entity.shipping_type.collection
+  parent: system.admin_content

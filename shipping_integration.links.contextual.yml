@@ -1,0 +1,32 @@
+entity.shipping_address.edit_form:
+  route_name: entity.shipping_address.edit_form
+  group: shipping_address
+  title: 'Edit'
+
+entity.shipping_address.delete_form:
+  route_name: entity.shipping_address.delete_form
+  group: shipping_address
+  title: 'Delete'
+  weight: 10
+
+entity.shipping_order.edit_form:
+  route_name: entity.shipping_order.edit_form
+  group: shipping_order
+  title: 'Edit'
+
+entity.shipping_order.delete_form:
+  route_name: entity.shipping_order.delete_form
+  group: shipping_order
+  title: 'Delete'
+  weight: 10
+
+entity.shipping_type.edit_form:
+  route_name: entity.shipping_type.edit_form
+  group: shipping_type
+  title: 'Edit'
+
+entity.shipping_type.delete_form:
+  route_name: entity.shipping_type.delete_form
+  group: shipping_type
+  title: 'Delete'
+  weight: 10

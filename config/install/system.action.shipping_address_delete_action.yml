@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - shipping_integration
+id: shipping_address_delete_action
+label: 'Delete shipping addresses'
+type: shipping_address
+plugin: entity:delete_action:shipping_address
+configuration: {  }

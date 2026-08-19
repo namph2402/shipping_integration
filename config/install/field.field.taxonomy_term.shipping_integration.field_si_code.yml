@@ -1,0 +1,18 @@
+langcode: vi
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_code
+    - taxonomy.vocabulary.shipping_integration
+id: taxonomy_term.shipping_integration.field_si_code
+field_name: field_si_code
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: Code
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string
