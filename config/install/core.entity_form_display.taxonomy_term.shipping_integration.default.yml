@@ -1,75 +1,95 @@
-langcode: vi
+langcode: en
 status: true
 dependencies:
   config:
     - field.field.taxonomy_term.shipping_integration.field_si_code
+    - field.field.taxonomy_term.shipping_integration.field_si_contract
+    - field.field.taxonomy_term.shipping_integration.field_si_expiration
     - field.field.taxonomy_term.shipping_integration.field_si_host
     - field.field.taxonomy_term.shipping_integration.field_si_password
     - field.field.taxonomy_term.shipping_integration.field_si_token
+    - field.field.taxonomy_term.shipping_integration.field_si_type
     - field.field.taxonomy_term.shipping_integration.field_si_username
     - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
 id: taxonomy_term.shipping_integration.default
 targetEntityType: taxonomy_term
 bundle: shipping_integration
 mode: default
 content:
-  field_si_code:
-    type: string_textfield
-    weight: 4
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
-  field_si_host:
-    type: string_textfield
-    weight: 1
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
-  field_si_password:
-    type: string_textfield
-    weight: 3
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
-  field_si_token:
-    type: string_textarea
-    weight: 5
-    region: content
-    settings:
-      rows: 5
-      placeholder: ''
-    third_party_settings: {  }
-  field_si_username:
-    type: string_textfield
-    weight: 2
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
   name:
-    type: string_textfield
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
     weight: 0
     region: content
+  field_si_type:
+    type: 'entity_reference_autocomplete'
+    settings:
+      match_operator: 'CONTAINS'
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_si_host:
+    type: 'string_textfield'
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-  status:
-    type: boolean_checkbox
+    weight: 2
+    region: content
+  field_si_username:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_si_password:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_si_code:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_si_contract:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
     weight: 6
     region: content
+  field_si_token:
+    type: 'string_textarea'
     settings:
-      display_label: true
+      rows: 4
+      placeholder: ''
     third_party_settings: {  }
-hidden:
-  description: true
-  langcode: true
-  path: true
-  simple_sitemap: true
+    weight: 7
+    region: content
+  field_si_expiration:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden: {  }

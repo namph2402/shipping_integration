@@ -27,3 +27,11 @@ shipping_type.add_form:
   route_name: entity.shipping_type.add_form
   appears_on:
     - entity.shipping_type.collection
+
+shipping_integration.synchronize_addresses:
+  title: 'Đồng bộ danh mục địa chỉ'
+  route_name: shipping_integration.synchronize_addresses
+  class: '\Drupal\Core\Menu\LocalActionDefault'
+  deriver: '\Drupal\shipping_integration\Plugin\Derivative\SynchronizeAddressesLocalAction'
+  appears_on:
+    - entity.shipping_address.collection

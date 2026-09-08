@@ -1,16 +1,18 @@
-langcode: vi
+langcode: en
 status: true
 dependencies:
   config:
     - field.storage.taxonomy_term.field_si_host
     - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
 id: taxonomy_term.shipping_integration.field_si_host
 field_name: field_si_host
 entity_type: taxonomy_term
 bundle: shipping_integration
-label: Host
+label: 'Host'
 description: ''
-required: true
+required: false
 translatable: false
 default_value: {  }
 default_value_callback: ''

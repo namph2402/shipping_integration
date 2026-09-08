@@ -1,0 +1,480 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.shipping_order.vnpost.field_so_bcp_code
+    - field.field.shipping_order.vnpost.field_so_bcp_name
+    - field.field.shipping_order.vnpost.field_so_carrier
+    - field.field.shipping_order.vnpost.field_so_case_id
+    - field.field.shipping_order.vnpost.field_so_case_type
+    - field.field.shipping_order.vnpost.field_so_cod
+    - field.field.shipping_order.vnpost.field_so_config
+    - field.field.shipping_order.vnpost.field_so_content
+    - field.field.shipping_order.vnpost.field_so_delivery_note
+    - field.field.shipping_order.vnpost.field_so_delivery_require
+    - field.field.shipping_order.vnpost.field_so_delivery_time
+    - field.field.shipping_order.vnpost.field_so_hdr_id
+    - field.field.shipping_order.vnpost.field_so_height
+    - field.field.shipping_order.vnpost.field_so_history
+    - field.field.shipping_order.vnpost.field_so_insurance
+    - field.field.shipping_order.vnpost.field_so_is_broken
+    - field.field.shipping_order.vnpost.field_so_is_new_address
+    - field.field.shipping_order.vnpost.field_so_item_code
+    - field.field.shipping_order.vnpost.field_so_label
+    - field.field.shipping_order.vnpost.field_so_length
+    - field.field.shipping_order.vnpost.field_so_main_fee
+    - field.field.shipping_order.vnpost.field_so_org_accept
+    - field.field.shipping_order.vnpost.field_so_org_collect
+    - field.field.shipping_order.vnpost.field_so_original_id
+    - field.field.shipping_order.vnpost.field_so_payload
+    - field.field.shipping_order.vnpost.field_so_price_weight
+    - field.field.shipping_order.vnpost.field_so_receiver_address
+    - field.field.shipping_order.vnpost.field_so_receiver_commune
+    - field.field.shipping_order.vnpost.field_so_receiver_district
+    - field.field.shipping_order.vnpost.field_so_receiver_email
+    - field.field.shipping_order.vnpost.field_so_receiver_name
+    - field.field.shipping_order.vnpost.field_so_receiver_phone
+    - field.field.shipping_order.vnpost.field_so_receiver_province
+    - field.field.shipping_order.vnpost.field_so_sale_code
+    - field.field.shipping_order.vnpost.field_so_send_type
+    - field.field.shipping_order.vnpost.field_so_sender_address
+    - field.field.shipping_order.vnpost.field_so_sender_commune
+    - field.field.shipping_order.vnpost.field_so_sender_district
+    - field.field.shipping_order.vnpost.field_so_sender_email
+    - field.field.shipping_order.vnpost.field_so_sender_name
+    - field.field.shipping_order.vnpost.field_so_sender_phone
+    - field.field.shipping_order.vnpost.field_so_sender_province
+    - field.field.shipping_order.vnpost.field_so_service
+    - field.field.shipping_order.vnpost.field_so_status
+    - field.field.shipping_order.vnpost.field_so_synced
+    - field.field.shipping_order.vnpost.field_so_total_fee
+    - field.field.shipping_order.vnpost.field_so_vas_fee
+    - field.field.shipping_order.vnpost.field_so_vehicle
+    - field.field.shipping_order.vnpost.field_so_weight
+    - field.field.shipping_order.vnpost.field_so_width
+    - shipping_integration.shipping_order_type.vnpost
+  module:
+    - file
+    - options
+    - shipping_integration
+id: shipping_order.vnpost.default
+targetEntityType: shipping_order
+bundle: vnpost
+mode: default
+content:
+  label:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_so_config:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_so_carrier:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_so_sale_code:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_so_item_code:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_so_original_id:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_so_hdr_id:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_so_status:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_so_case_id:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_so_case_type:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_so_is_new_address:
+    type: 'boolean'
+    label: above
+    settings:
+      format: 'yes-no'
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_so_sender_name:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_so_sender_phone:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_so_sender_email:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_so_sender_address:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_so_sender_province:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_so_sender_district:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_so_sender_commune:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_so_receiver_name:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  field_so_receiver_phone:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_so_receiver_email:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_so_receiver_address:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  field_so_receiver_province:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_so_receiver_district:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  field_so_receiver_commune:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 24
+    region: content
+  field_so_service:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 25
+    region: content
+  field_so_weight:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 26
+    region: content
+  field_so_length:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 27
+    region: content
+  field_so_width:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 28
+    region: content
+  field_so_height:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 29
+    region: content
+  field_so_content:
+    type: 'basic_string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 30
+    region: content
+  field_so_cod:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 31
+    region: content
+  field_so_insurance:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 32
+    region: content
+  field_so_vehicle:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 33
+    region: content
+  field_so_send_type:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 34
+    region: content
+  field_so_is_broken:
+    type: 'boolean'
+    label: above
+    settings:
+      format: 'yes-no'
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 35
+    region: content
+  field_so_delivery_time:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 36
+    region: content
+  field_so_delivery_require:
+    type: 'list_default'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 37
+    region: content
+  field_so_delivery_note:
+    type: 'basic_string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 38
+    region: content
+  field_so_org_collect:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 39
+    region: content
+  field_so_org_accept:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 40
+    region: content
+  field_so_bcp_code:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 41
+    region: content
+  field_so_bcp_name:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 42
+    region: content
+  field_so_main_fee:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 43
+    region: content
+  field_so_vas_fee:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 44
+    region: content
+  field_so_total_fee:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 45
+    region: content
+  field_so_price_weight:
+    type: 'number_decimal'
+    label: above
+    settings:
+      thousand_separator: '.'
+      decimal_separator: ','
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 46
+    region: content
+  field_so_history:
+    type: 'basic_string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 47
+    region: content
+  field_so_label:
+    type: 'file_default'
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 48
+    region: content
+  field_so_payload:
+    type: 'basic_string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 49
+    region: content
+  field_so_synced:
+    type: 'timestamp'
+    label: above
+    settings:
+      date_format: 'medium'
+      custom_date_format: ''
+      timezone: ''
+    third_party_settings: {  }
+    weight: 50
+    region: content
+hidden: {  }

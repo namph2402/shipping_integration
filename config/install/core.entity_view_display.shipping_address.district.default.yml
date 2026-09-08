@@ -1,0 +1,57 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.shipping_address.district.field_code
+    - field.field.shipping_address.district.field_is_new_address
+    - field.field.shipping_address.district.field_province
+    - field.field.shipping_address.district.field_type
+    - shipping_integration.shipping_address_type.district
+  module:
+    - shipping_integration
+id: shipping_address.district.default
+targetEntityType: shipping_address
+bundle: district
+mode: default
+content:
+  label:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_code:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_type:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_is_new_address:
+    type: 'boolean'
+    label: above
+    settings:
+      format: 'yes-no'
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_province:
+    type: 'entity_reference_label'
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+hidden: {  }

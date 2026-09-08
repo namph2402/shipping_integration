@@ -2,54 +2,71 @@
 
 namespace Drupal\shipping_integration\Service;
 
-use Psr\Log\LoggerInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\taxonomy\Entity\Term;
+use Drupal\shipping_integration\Exception\ShippingTokenException;
+use Drupal\shipping_integration\ShippingProvidersInterface;
 use Drupal\shipping_integration\ShippingProvidersPluginManager;
+use Drupal\taxonomy\TermInterface;
+use Psr\Log\LoggerInterface;
 
 /**
- * {@inheritdoc}
+ * Đồng bộ danh mục địa chỉ của một hãng vận chuyển về entity shipping_address.
+ *
+ * Danh mục địa chỉ Việt Nam đang tồn tại song song hai bộ: bộ ba cấp cũ
+ * (tỉnh - huyện - xã) và bộ hai cấp sau sáp nhập (tỉnh - xã). Cả hai được lưu
+ * chung một entity, phân biệt bằng field_is_new_address, vì đơn hàng cũ vẫn
+ * tra cứu theo mã cũ còn đơn mới dùng mã mới.
  */
 class SynchronizeAddresses {
+
+  /**
+   * Số bản ghi lưu được thì xả cache tĩnh một lần.
+   */
+  protected const RESET_CACHE_EVERY = 500;
 
   /**
    * {@inheritdoc}
    */
   public function __construct(
     protected ShippingProvidersPluginManager $providers,
+    protected GetConfigShipping $getConfig,
     protected EntityTypeManagerInterface $entityTypeManager,
     protected LoggerInterface $logger,
     protected Connection $database,
   ) {}
 
   /**
-   * Đồng bộ địa chỉ.
+   * Đồng bộ địa chỉ theo một term cấu hình kết nối.
+   *
+   * @param TermInterface $config_entity
+   *   Term cấu hình kết nối.
+   *
+   * @return array
+   *   Kết quả gồm success, message, created và total.
    */
-  public function synchronize(Term $config_term): array {
+  public function synchronize(TermInterface $config_entity): array {
     try {
-      $config = [
-        "shipping_type" => $config_term->get("field_shipping_type")->entity,
-        "shipping_host" => $config_term->get("field_shipping_host")->uri,
-        "shipping_token" => $config_term->get("field_shipping_token")->value,
-      ];
+      $config = $this->getConfig->handle($config_entity);
 
-      if (empty($config["shipping_type"])
-        || empty($config["shipping_host"])
-        || empty($config["shipping_token"])) {
+      if (empty($config["shipping_type_id"])) {
         return [
           "success" => FALSE,
-          "message" => 'Shipping configuration is incomplete',
+          "message" => "Cấu hình chưa chọn hãng vận chuyển",
         ];
       }
 
-      $type = $config["shipping_type"];
-      $config["shipping_type_id"] = $type->id();
+      $provider = $this->provider($config);
 
-      $provider_id = $type->hasField("field_code") ? $type->get("field_code")->value : NULL;
-
-      $provider = $this->getProvider($provider_id);
-      $data = $provider->synchronizeAddresses($config);
+      try {
+        $data = $provider->synchronizeAddresses($config);
+      }
+      catch (ShippingTokenException) {
+        // Token hết hạn sớm hơn mốc lưu trong term, xin bộ mới rồi gọi lại
+        // đúng một lần.
+        $config = $this->getConfig->refresh($config) ?? $config;
+        $data = $provider->synchronizeAddresses($config);
+      }
 
       if (empty($data["success"])) {
         return $data;
@@ -57,7 +74,7 @@ class SynchronizeAddresses {
 
       return $this->saveAddresses($data["data"] ?? [], $config["shipping_type_id"]);
     }
-    catch (\DomainException $e) {
+    catch (\DomainException | ShippingTokenException $e) {
       return [
         "success" => FALSE,
         "message" => $e->getMessage(),
@@ -65,7 +82,7 @@ class SynchronizeAddresses {
     }
     catch (\Throwable $e) {
       $this->logger->error(
-        "Invoice system error: @message",
+        "Shipping system error: @message",
         ["@message" => $e->getMessage(), "exception" => $e]
       );
 
@@ -78,6 +95,14 @@ class SynchronizeAddresses {
 
   /**
    * Lưu các địa chỉ chưa có, bỏ qua địa chỉ đã đồng bộ trước đó.
+   *
+   * @param array $addresses
+   *   Danh sách địa chỉ đã chuẩn hoá, xếp theo thứ tự tỉnh, huyện, xã.
+   * @param string|int $type_id
+   *   ID của entity shipping_type.
+   *
+   * @return array
+   *   Kết quả gồm success, created và total.
    */
   private function saveAddresses(array $addresses, string|int $type_id): array {
     $storage = $this->entityTypeManager->getStorage("shipping_address");
@@ -99,6 +124,8 @@ class SynchronizeAddresses {
         "field_is_new_address" => $address["is_new"],
       ];
 
+      // Cha của bản ghi luôn được đồng bộ trước trong cùng lượt chạy nên tra
+      // trong $existing là đủ, không cần truy vấn lại.
       if ($address["bundle"] !== "province" && !empty($address["province_code"])) {
         $province_key = $this->addressKey("province", $address["is_new"], $address["province_code"]);
         $values["field_province"] = $existing[$province_key] ?? NULL;
@@ -115,13 +142,14 @@ class SynchronizeAddresses {
       $existing[$key] = $entity->id();
       $created++;
 
-      if ($created % 500 === 0) {
+      if ($created % static::RESET_CACHE_EVERY === 0) {
         $storage->resetCache();
       }
     }
 
     return [
       "success" => TRUE,
+      "message" => "Đã đồng bộ {$created} địa chỉ mới trên tổng số " . count($addresses),
       "created" => $created,
       "total" => count($addresses),
     ];
@@ -129,6 +157,15 @@ class SynchronizeAddresses {
 
   /**
    * Lấy các địa chỉ đã tồn tại theo khoá bundle - cũ/mới - mã.
+   *
+   * Truy vấn thẳng bảng thay vì loadMultiple vì danh mục địa chỉ lên tới hàng
+   * chục nghìn bản ghi, nạp hết ra entity sẽ vỡ bộ nhớ.
+   *
+   * @param string|int $type_id
+   *   ID của entity shipping_type.
+   *
+   * @return array
+   *   Mảng khoá tra cứu ánh xạ sang id địa chỉ.
    */
   private function loadExistingAddresses(string|int $type_id): array {
     $query = $this->database->select("shipping_address", "a");
@@ -141,6 +178,7 @@ class SynchronizeAddresses {
     $query->condition("t.field_type_target_id", $type_id);
 
     $existing = [];
+
     foreach ($query->execute() as $row) {
       $existing[$this->addressKey($row->bundle, $row->is_new, $row->code)] = $row->id;
     }
@@ -150,24 +188,45 @@ class SynchronizeAddresses {
 
   /**
    * Khoá tra cứu địa chỉ.
+   *
+   * @param string $bundle
+   *   Bundle của địa chỉ.
+   * @param mixed $is_new
+   *   Cờ danh mục hai cấp.
+   * @param mixed $code
+   *   Mã địa chỉ.
+   *
+   * @return string
+   *   Khoá tra cứu.
    */
-  private function addressKey(string $bundle, $is_new, $code): string {
+  private function addressKey(string $bundle, mixed $is_new, mixed $code): string {
     return $bundle . ":" . (int) $is_new . ":" . $code;
   }
 
   /**
-   * Lấy danh sách provider.
+   * Lấy plugin của hãng theo cấu hình.
+   *
+   * @param array $config
+   *   Cấu hình kết nối.
+   *
+   * @return ShippingProvidersInterface
+   *   Plugin tương ứng.
    */
-  private function getProvider(string $provider_id): object {
-    if (empty($provider_id)) {
-      throw new \DomainException("Invoice provider not yet configured");
+  private function provider(array $config): ShippingProvidersInterface {
+    $provider_id = (string) ($config["shipping_provider"] ?? "");
+
+    if ($provider_id === "") {
+      throw new \DomainException("Shipping provider not yet configured");
     }
 
     if (!$this->providers->hasDefinition($provider_id)) {
-      throw new \DomainException("The invoice provider {$provider_id} does not exist");
+      throw new \DomainException("The shipping provider {$provider_id} does not exist");
     }
 
-    return $this->providers->createInstance($provider_id);
+    /** @var ShippingProvidersInterface $provider */
+    $provider = $this->providers->createInstance($provider_id);
+
+    return $provider;
   }
 
 }

@@ -6,10 +6,174 @@ entity.shipping_type.settings:
   requirements:
     _permission: 'administer shipping_type'
 
-shipping_integration.shipping:
-  path: '/shipping-integration/shipping'
+shipping_integration.order_list:
+  path: '/admin/shipping/orders'
   defaults:
-    _title: 'Shipping'
-    _controller: '\Drupal\shipping_integration\Controller\ShippingController'
+    _title: 'Danh sách đơn vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::listOrders'
   requirements:
-    _permission: 'access content'
+    _permission: 'access shipping order'
+
+shipping_integration.order_detail:
+  path: '/admin/shipping/order/{shipping_order}'
+  defaults:
+    _title: 'Chi tiết đơn vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::detail'
+  requirements:
+    _permission: 'access shipping order'
+  options:
+    parameters:
+      shipping_order:
+        type: 'entity:shipping_order'
+
+shipping_integration.order_create:
+  path: '/admin/shipping/order/action/create'
+  defaults:
+    _title: 'Tạo đơn vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::createOrders'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_confirm_draft:
+  path: '/admin/shipping/order/action/confirm-draft'
+  defaults:
+    _title: 'Phát hành đơn nháp'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::confirmDrafts'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_update:
+  path: '/admin/shipping/order/action/update'
+  defaults:
+    _title: 'Hiệu chỉnh đơn vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::updateOrders'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_cancel:
+  path: '/admin/shipping/order/action/cancel'
+  defaults:
+    _title: 'Hủy đơn vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::cancelOrders'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_approval:
+  path: '/admin/shipping/order/action/approval'
+  defaults:
+    _title: 'Kết quả phê duyệt'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::approvalOrders'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_synchronize:
+  path: '/admin/shipping/order/action/synchronize'
+  defaults:
+    _title: 'Đồng bộ đơn vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::synchronizeOrders'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_fee:
+  path: '/admin/shipping/order/action/fee'
+  defaults:
+    _title: 'Tính cước phí'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::calculateFees'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_label:
+  path: '/admin/shipping/order/action/label'
+  defaults:
+    _title: 'In vận đơn'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::printLabels'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_pull:
+  path: '/admin/shipping/order/action/pull'
+  defaults:
+    _title: 'Kéo đơn hàng về'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::pullOrders'
+  methods: [POST]
+  requirements:
+    _permission: 'administer shipping order'
+    _csrf_token: 'TRUE'
+
+shipping_integration.order_history:
+  path: '/admin/shipping/order/{shipping_order}/history'
+  defaults:
+    _title: 'Hành trình đơn hàng'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::history'
+  requirements:
+    _permission: 'access shipping order'
+  options:
+    parameters:
+      shipping_order:
+        type: 'entity:shipping_order'
+
+shipping_integration.order_preview_fee:
+  path: '/admin/shipping/order/{shipping_order}/preview-fee'
+  defaults:
+    _title: 'Tính thử cước phí'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::previewFee'
+  requirements:
+    _permission: 'access shipping order'
+  options:
+    parameters:
+      shipping_order:
+        type: 'entity:shipping_order'
+
+shipping_integration.order_download_label:
+  path: '/admin/shipping/order/{shipping_order}/label'
+  defaults:
+    _title: 'Tải vận đơn'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::downloadLabel'
+  requirements:
+    _permission: 'access shipping order'
+  options:
+    parameters:
+      shipping_order:
+        type: 'entity:shipping_order'
+
+# Cấu hình kết nối.
+shipping_integration.synchronize_addresses:
+  path: '/admin/shipping/config/{taxonomy_term}/synchronize-addresses'
+  defaults:
+    _title: 'Đồng bộ danh mục địa chỉ'
+    _form: '\Drupal\shipping_integration\Form\SynchronizeAddressesForm'
+  requirements:
+    _permission: 'administer shipping_type'
+  options:
+    parameters:
+      taxonomy_term:
+        type: 'entity:taxonomy_term'
+
+shipping_integration.refresh_token:
+  path: '/admin/shipping/config/{taxonomy_term}/refresh-token'
+  defaults:
+    _title: 'Lấy lại token'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingController::refreshToken'
+  requirements:
+    _permission: 'administer shipping_type'
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      taxonomy_term:
+        type: 'entity:taxonomy_term'

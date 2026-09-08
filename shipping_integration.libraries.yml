@@ -1,0 +1,12 @@
+shipping_order:
+  css:
+    theme:
+      css/shipping-order.css: {}
+  js:
+    js/shipping-order.js: {}
+    js/shipping-table.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/once
+    - core/drupalSettings

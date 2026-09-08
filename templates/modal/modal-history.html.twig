@@ -1,0 +1,27 @@
+{#
+/**
+ * @file
+ * Hộp thoại hiển thị hành trình của một bưu gửi.
+ *
+ * Nội dung được nạp bằng JavaScript khi người dùng mở hộp thoại.
+ */
+#}
+<div class="modal fade" id="historyShippingOrderModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h1 class="mb-0 fs-5">
+					{{ "Tracking history"|t }}
+					<span class="shipping-history-code text-muted fs-6"></span>
+				</h1>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ "Close"|t }}"></button>
+			</div>
+			<div class="modal-body shipping-history-body">
+				<p class="text-muted mb-0">{{ "Loading..."|t }}</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ "Close"|t }}</button>
+			</div>
+		</div>
+	</div>
+</div>

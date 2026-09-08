@@ -1,5 +1,11 @@
 name: 'Shipping integration'
 type: module
-description: 'Tích hợp đơn vị vận chuyển.'
+description: 'Tích hợp đơn vị vận chuyển và quản lý đơn hàng trong nước.'
 package: Custom
 core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:field
+  - drupal:file
+  - drupal:options
+  - drupal:taxonomy
+  - drupal:views

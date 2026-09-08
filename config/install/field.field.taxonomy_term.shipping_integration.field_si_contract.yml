@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_contract
+    - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
+id: taxonomy_term.shipping_integration.field_si_contract
+field_name: field_si_contract
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: 'Mã hợp đồng'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

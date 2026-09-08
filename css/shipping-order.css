@@ -1,0 +1,91 @@
+/**
+ * @file
+ * Giao diện danh sách và chi tiết đơn vận chuyển.
+ */
+
+.list-shipping-order .summary-card,
+.detail-shipping-order .summary-card {
+  padding: 0.75rem 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  background-color: #fff;
+}
+
+.list-shipping-order .summary-card-total {
+  border-color: #0d6efd;
+  background-color: #f2f7ff;
+}
+
+.list-shipping-order .summary-label {
+  font-size: 0.8125rem;
+  color: #6c757d;
+}
+
+.list-shipping-order .summary-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Bảng cuộn trong khung của nó, phần đầu bảng đứng yên khi cuộn dọc. */
+.shipping-table-wrapper {
+  overflow: auto;
+}
+
+.shipping-table {
+  margin-bottom: 0;
+}
+
+.shipping-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  white-space: nowrap;
+  background-color: #f8f9fa;
+}
+
+.shipping-table th.shipping-sortable {
+  cursor: pointer;
+}
+
+.shipping-table th.shipping-sortable:hover {
+  background-color: #e9ecef;
+}
+
+.shipping-column-menu {
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.shipping-timeline {
+  list-style: none;
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 2px solid #dee2e6;
+}
+
+.shipping-timeline li {
+  position: relative;
+  padding: 0.25rem 0 0.25rem 0.75rem;
+}
+
+.shipping-timeline li::before {
+  position: absolute;
+  top: 0.7rem;
+  left: -1.35rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  content: "";
+}
+
+.shipping-timeline-date {
+  display: inline-block;
+  min-width: 10rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.shipping-timeline-status {
+  font-weight: 500;
+}

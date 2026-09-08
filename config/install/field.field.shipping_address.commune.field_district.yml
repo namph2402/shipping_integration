@@ -1,0 +1,28 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_address.field_district
+    - shipping_integration.shipping_address_type.commune
+    - shipping_integration.shipping_address_type.district
+  module:
+    - shipping_integration
+id: shipping_address.commune.field_district
+field_name: field_district
+entity_type: shipping_address
+bundle: commune
+label: 'Quận/huyện'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:shipping_address'
+  handler_settings:
+    target_bundles:
+      district: district
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference

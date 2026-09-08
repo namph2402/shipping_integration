@@ -2,18 +2,14 @@
 
 /**
  * @file
- * Shipping integration module.
+ * Tích hợp các hãng vận chuyển và quản lý đơn hàng trong nước.
  */
 
 declare(strict_types=1);
 
-/**
- * @file
- * Provides a shipping address entity type.
- */
-
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Render\Element;
+use Drupal\shipping_integration\Service\GetConfigShipping;
 
 /**
  * Implements hook_theme().
@@ -23,6 +19,20 @@ function shipping_integration_theme(): array {
     'shipping_address' => ['render element' => 'elements'],
     'shipping_order' => ['render element' => 'elements'],
     'shipping_type' => ['render element' => 'elements'],
+    'list_shipping_order' => [
+      'template' => 'list-shipping-order',
+      'variables' => [
+        'data' => [],
+        'filter' => [],
+      ],
+    ],
+    'detail_shipping_order' => [
+      'template' => 'detail-shipping-order',
+      'variables' => [
+        'data' => [],
+        'filter' => [],
+      ],
+    ],
   ];
 }
 
@@ -51,8 +61,8 @@ function template_preprocess_shipping_address(array &$variables): void {
  *
  * @param array $variables
  *   An associative array containing:
- *   - elements: An associative array containing the shipping order information and any
- *     fields attached to the entity.
+ *   - elements: An associative array containing the shipping order information
+ *     and any fields attached to the entity.
  *   - attributes: HTML attributes for the containing element.
  */
 function template_preprocess_shipping_order(array &$variables): void {
@@ -69,8 +79,8 @@ function template_preprocess_shipping_order(array &$variables): void {
  *
  * @param array $variables
  *   An associative array containing:
- *   - elements: An associative array containing the shipping type information and any
- *     fields attached to the entity.
+ *   - elements: An associative array containing the shipping type information
+ *     and any fields attached to the entity.
  *   - attributes: HTML attributes for the containing element.
  */
 function template_preprocess_shipping_type(array &$variables): void {
@@ -82,37 +92,56 @@ function template_preprocess_shipping_type(array &$variables): void {
 
 /**
  * Implements hook_entity_presave().
+ *
+ * Mỗi lần người dùng sửa term cấu hình kết nối là một lần tài khoản hoặc host
+ * có thể đã đổi, nên lấy luôn token mới thay vì chờ tới lệnh gọi API đầu tiên
+ * mới phát hiện sai. Cờ skip_call_token để dịch vụ tự lưu token không kích
+ * hoạt lại vòng lặp này.
  */
-function shipping_integration_entity_presave(EntityInterface $entity) {
-  if ($entity->getEntityTypeId() !== "taxonomy_term"
-    || $entity->bundle() !== "config_shipping"
+function shipping_integration_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'taxonomy_term'
+    || $entity->bundle() !== GetConfigShipping::VOCABULARY
     || !empty($entity->skip_call_token)
   ) {
     return;
   }
 
-  $langcode = $entity->language()->getId();
-
   /** @var \Drupal\taxonomy\TermInterface $entity */
-  $translation = $entity->hasTranslation($langcode)
-    ? $entity->getTranslation($langcode)
-    : $entity;
+  \Drupal::service('shipping_integration.get_config')->refreshToken($entity);
+}
 
-  $config = [
-    "shipping_type" => $entity->get("field_shipping_type")->entity,
-    "shipping_host" => $entity->get("field_shipping_host")->uri,
-    "shipping_username" => $entity->get("field_shipping_username")->value,
-    "shipping_password" => $entity->get("field_shipping_password")->value,
-    "shipping_code" => $entity->get("field_shipping_code")->value,
-    "shipping_token" => $entity->get("field_shipping_token")->value,
-  ];
+/**
+ * Implements hook_ENTITY_TYPE_insert() for taxonomy_term.
+ */
+function shipping_integration_taxonomy_term_insert(EntityInterface $entity): void {
+  _shipping_integration_flush_local_actions($entity);
+}
 
-  $data_token = \Drupal::service("shipping_integration.handle_shipping")->getToken($config);
+/**
+ * Implements hook_ENTITY_TYPE_update() for taxonomy_term.
+ */
+function shipping_integration_taxonomy_term_update(EntityInterface $entity): void {
+  _shipping_integration_flush_local_actions($entity);
+}
 
-  if (empty($data_token["success"])) {
-    return;
+/**
+ * Implements hook_ENTITY_TYPE_delete() for taxonomy_term.
+ */
+function shipping_integration_taxonomy_term_delete(EntityInterface $entity): void {
+  _shipping_integration_flush_local_actions($entity);
+}
+
+/**
+ * Dựng lại các nút đồng bộ địa chỉ khi danh sách cấu hình kết nối đổi.
+ *
+ * Định nghĩa local action được cache mà không gắn cache tag nào, nên thêm hay
+ * đổi tên một term cấu hình sẽ không tự hiện ra nút tương ứng.
+ *
+ * @param EntityInterface $entity
+ *   Term vừa được lưu hoặc xoá.
+ */
+function _shipping_integration_flush_local_actions(EntityInterface $entity): void {
+  if ($entity->bundle() === GetConfigShipping::VOCABULARY) {
+    \Drupal::service('plugin.manager.menu.local_action')->clearCachedDefinitions();
   }
-
-  $translation->set("field_shipping_token", $data_token["token"]);
-  \Drupal::messenger()->addStatus(t("Get token successfully"));
 }

@@ -1,0 +1,28 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_order.field_so_receiver_commune
+    - shipping_integration.shipping_address_type.commune
+    - shipping_integration.shipping_order_type.vnpost
+  module:
+    - shipping_integration
+id: shipping_order.vnpost.field_so_receiver_commune
+field_name: field_so_receiver_commune
+entity_type: shipping_order
+bundle: vnpost
+label: 'Phường/xã người nhận'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:shipping_address'
+  handler_settings:
+    target_bundles:
+      commune: commune
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference

@@ -1,0 +1,233 @@
+{#
+/**
+ * @file
+ * Danh sách đơn hàng vận chuyển trong nước.
+ *
+ * Biến khả dụng:
+ * - data: danh sách đơn hàng đã được ShippingOrderService::buildRow() làm phẳng.
+ * - filter: bộ lọc hiện tại, các danh mục chọn và tổng hợp số liệu.
+ *
+ * @see \Drupal\shipping_integration\Controller\ShippingOrderController::listOrders()
+ */
+#}
+<div class="list-shipping-order d-flex flex-column h-100 min-w-0">
+	<div class="p-2 header-wrapper">
+		<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+			<form method="GET" class="d-flex flex-wrap gap-1">
+				<input type="date" name="start_date" class="form-control w-auto" value="{{ filter.date.start }}"/>
+				<input type="date" name="end_date" class="form-control w-auto" value="{{ filter.date.end }}"/>
+				<select name="config_id" class="form-control w-auto">
+					<option value="">{{ "All connections"|t }}</option>
+					{% for config_id, config_name in filter.option_config %}
+						<option value="{{ config_id }}" {% if filter.config_id == config_id %} selected {% endif %}>{{ config_name }}</option>
+					{% endfor %}
+				</select>
+				<select name="status" class="form-control w-auto">
+					<option value="">{{ "All statuses"|t }}</option>
+					{% for status_value, status_label in filter.option_status %}
+						<option value="{{ status_value }}" {% if filter.status == status_value %} selected {% endif %}>{{ status_label }}</option>
+					{% endfor %}
+				</select>
+				<input type="search" name="keyword" class="form-control w-auto" value="{{ filter.keyword }}" placeholder="{{ "Item code, order code, phone"|t }}"/>
+				<button type="submit" class="btn btn-primary">
+					<i class="bi bi-search"></i>
+				</button>
+			</form>
+			<div class="d-flex align-items-start flex-wrap gap-1">
+				<button type="button" data-search-date="last_week" class="btn btn-outline-primary btn-search-date text-nowrap">{{ "Last Week"|t }}</button>
+				<button type="button" data-search-date="last_month" class="btn btn-outline-primary btn-search-date text-nowrap">{{ "Last Month"|t }}</button>
+				<button type="button" data-search-date="full_date" class="btn btn-outline-primary btn-search-date text-nowrap">{{ "Full date"|t }}</button>
+			</div>
+		</div>
+
+		{# Mỗi nút gửi POST kèm danh sách id đang tích chọn trong bảng. #}
+		<div class="d-flex flex-wrap gap-1 shipping-actions">
+			<button type="button" class="btn btn-success text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_create") }}" data-draft="0"
+				data-confirm="{{ "Push the selected orders to the carrier?"|t }}">
+				<i class="bi bi-send me-1"></i>{{ "Create order"|t }}
+			</button>
+			<button type="button" class="btn btn-outline-success text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_create") }}" data-draft="1"
+				data-confirm="{{ "Save the selected orders as drafts on the carrier system?"|t }}">
+				<i class="bi bi-file-earmark me-1"></i>{{ "Save draft"|t }}
+			</button>
+			<button type="button" class="btn btn-primary text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_confirm_draft") }}"
+				data-confirm="{{ "Publish the selected drafts to the carrier? The orders can no longer be edited freely afterwards."|t }}">
+				<i class="bi bi-send-check me-1"></i>{{ "Publish draft"|t }}
+			</button>
+			<button type="button" class="btn btn-warning text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_update") }}"
+				data-confirm="{{ "Send a correction request for the selected orders?"|t }}">
+				<i class="bi bi-pencil-square me-1"></i>{{ "Correct order"|t }}
+			</button>
+			<button type="button" class="btn btn-danger text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_cancel") }}"
+				data-confirm="{{ "Cancel the selected orders?"|t }}">
+				<i class="bi bi-x-circle me-1"></i>{{ "Cancel order"|t }}
+			</button>
+			<button type="button" class="btn btn-outline-secondary text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_approval") }}">
+				<i class="bi bi-check2-square me-1"></i>{{ "Approval result"|t }}
+			</button>
+			<button type="button" class="btn btn-outline-primary text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_synchronize") }}">
+				<i class="bi bi-arrow-repeat me-1"></i>{{ "Synchronize"|t }}
+			</button>
+			<button type="button" class="btn btn-outline-primary text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_fee") }}">
+				<i class="bi bi-cash-coin me-1"></i>{{ "Calculate fee"|t }}
+			</button>
+			<button type="button" class="btn btn-outline-dark text-nowrap btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_label") }}">
+				<i class="bi bi-printer me-1"></i>{{ "Print waybill"|t }}
+			</button>
+			<button type="button" class="btn btn-info text-nowrap" data-bs-toggle="modal" data-bs-target="#pullShippingOrderModal">
+				<i class="bi bi-cloud-download me-1"></i>{{ "Pull orders"|t }}
+			</button>
+		</div>
+
+		{# Form ẩn dùng chung cho mọi nút thao tác ở trên. #}
+		<form method="POST" class="shipping-action-form d-none">
+			<input type="hidden" name="order_ids" value=""/>
+			<input type="hidden" name="draft" value="0"/>
+			<input type="hidden" name="destination" value="{{ filter.destination }}"/>
+		</form>
+	</div>
+
+	<div class="flex-grow-1 min-h-0 min-w-0 p-2 bg-white">
+		<div class="d-flex flex-column h-100 text-center">
+			<h4 class="text-uppercase fw-bold my-2">{{ "Domestic shipping orders"|t }}</h4>
+			<div class="shipping-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+				<div class="d-flex align-items-center gap-2">
+					<select class="form-select form-select-sm shipping-page-size">
+						{% for page_size in filter.option_page_size %}
+							<option value="{{ page_size }}" {% if filter.page_size == page_size %} selected {% endif %}>{{ page_size }}</option>
+						{% endfor %}
+						<option value="0" {% if filter.page_size == 0 %} selected {% endif %}>{{ "All"|t }}</option>
+					</select>
+					<span class="small text-muted text-nowrap shipping-range"></span>
+				</div>
+				<div class="d-flex align-items-center gap-2">
+					<div class="dropdown">
+						<button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-nowrap" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+							<i class="bi bi-layout-three-columns me-1"></i>{{ "Columns"|t }}
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end shipping-column-menu p-2"></ul>
+					</div>
+					<button type="button" class="btn btn-success btn-sm text-nowrap btn-export-excel">
+						<i class="bi bi-file-earmark-excel me-1"></i>{{ "Export Excel"|t }}
+					</button>
+				</div>
+			</div>
+
+			<div class="flex-grow-1 min-h-0 min-w-0 shipping-table-wrapper">
+				<table class="table table-hover table-bordered table-striped shipping-table"
+					data-export-name="{{ "Domestic shipping orders"|t }}">
+					<thead class="text-center">
+						<tr>
+							<th class="text-nowrap" data-col-export="0" data-col-sort="0" data-col-lock="1">
+								<input type="checkbox" class="form-check-input shipping-check-all"/>
+							</th>
+							<th class="text-nowrap" data-col-sort="0" data-col-lock="1">{{ "No."|t }}</th>
+							<th class="text-nowrap">{{ "Item code"|t }}</th>
+							<th class="text-nowrap">{{ "Order code"|t }}</th>
+							<th class="text-nowrap">{{ "Created"|t }}</th>
+							<th class="text-nowrap">{{ "Status"|t }}</th>
+							<th class="text-nowrap">{{ "Receiver"|t }}</th>
+							<th class="text-nowrap">{{ "Receiver phone"|t }}</th>
+							<th class="text-nowrap">{{ "Receiver address"|t }}</th>
+							<th class="text-nowrap">{{ "Service"|t }}</th>
+							<th class="text-nowrap">{{ "Weight"|t }}</th>
+							<th class="text-nowrap">{{ "COD"|t }}</th>
+							<th class="text-nowrap">{{ "Main fee"|t }}</th>
+							<th class="text-nowrap">{{ "Addon fee"|t }}</th>
+							<th class="text-nowrap">{{ "Total fee"|t }}</th>
+							<th class="text-nowrap">{{ "Delivery post office"|t }}</th>
+							<th class="text-nowrap">{{ "Connection"|t }}</th>
+							<th class="text-nowrap">{{ "Synced"|t }}</th>
+							<th class="text-nowrap" data-col-export="0" data-col-sort="0" data-col-lock="1">{{ "Action"|t }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for item in data %}
+							<tr>
+								<td class="text-center">
+									<input type="checkbox" class="form-check-input shipping-check" value="{{ item.id }}"/>
+								</td>
+								<td class="text-center" data-value="{{ loop.index }}">{{ loop.index }}</td>
+								<td class="text-center">
+									<a href="{{ path("shipping_integration.order_detail", {"shipping_order": item.id}) }}" class="text-success text-decoration-none fw-medium">
+										{{ item.item_code ?: item.label }}
+									</a>
+								</td>
+								<td class="text-center">{{ item.sale_code }}</td>
+								<td class="text-center" data-value="{{ item.created }}">{{ item.created|date("d/m/Y H:i") }}</td>
+								<td class="text-center">{{ item.status_label }}</td>
+								<td>{{ item.receiver_name }}</td>
+								<td class="text-center">{{ item.receiver_phone }}</td>
+								<td>{{ item.receiver_address }}</td>
+								<td class="text-center">{{ item.service }}</td>
+								<td class="text-end" data-value="{{ item.weight }}">{{ item.weight|number_format(0, ",", ".") }}</td>
+								<td class="text-end" data-value="{{ item.cod }}">{{ item.cod|number_format(0, ",", ".") }}</td>
+								<td class="text-end" data-value="{{ item.main_fee }}">{{ item.main_fee|number_format(0, ",", ".") }}</td>
+								<td class="text-end" data-value="{{ item.vas_fee }}">{{ item.vas_fee|number_format(0, ",", ".") }}</td>
+								<td class="text-end" data-value="{{ item.total_fee }}">{{ item.total_fee|number_format(0, ",", ".") }}</td>
+								<td>{{ item.bcp_name }}</td>
+								<td>{{ item.config }}</td>
+								<td class="text-center" data-value="{{ item.synced }}">
+									{% if item.synced %}{{ item.synced|date("d/m/Y H:i") }}{% endif %}
+								</td>
+								<td class="text-center">
+									<div class="dropdown">
+										<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+											<i class="bi bi-three-dots"></i>
+										</button>
+										<ul class="dropdown-menu dropdown-menu-end">
+											<li>
+												<a class="dropdown-item" href="{{ path("shipping_integration.order_detail", {"shipping_order": item.id}) }}">
+													{{ "View detail"|t }}
+												</a>
+											</li>
+											<li>
+												<a class="dropdown-item" href="{{ path("entity.shipping_order.edit_form", {"shipping_order": item.id}, {"query": {"destination": filter.destination}}) }}">
+													{{ "Edit"|t }}
+												</a>
+											</li>
+											<li>
+												<button type="button" class="dropdown-item btn-shipping-history"
+													data-bs-toggle="modal" data-bs-target="#historyShippingOrderModal"
+													data-url="{{ path("shipping_integration.order_history", {"shipping_order": item.id}) }}"
+													data-item-code="{{ item.item_code }}">
+													{{ "Tracking history"|t }}
+												</button>
+											</li>
+											<li>
+												{% if item.label_file %}
+													<a class="dropdown-item" href="{{ item.label_file }}" target="_blank">{{ "View waybill"|t }}</a>
+												{% else %}
+													<a class="dropdown-item" href="{{ path("shipping_integration.order_download_label", {"shipping_order": item.id}) }}" target="_blank">
+														{{ "Download waybill"|t }}
+													</a>
+												{% endif %}
+											</li>
+										</ul>
+									</div>
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+
+			{# Phân trang chạy trên trình duyệt, danh sách dòng đã có sẵn trong bảng. #}
+			<nav class="shipping-pagination d-flex justify-content-center mt-2" aria-label="{{ "Pagination"|t }}">
+				<ul class="pagination pagination-sm mb-0 shipping-pages"></ul>
+			</nav>
+		</div>
+	</div>
+</div>
+
+{{ include('@shipping_integration/templates/modal/modal-pull.html.twig') }}
+{{ include('@shipping_integration/templates/modal/modal-history.html.twig') }}

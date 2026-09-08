@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - options
+    - shipping_integration
+id: shipping_order.field_so_vehicle
+field_name: field_so_vehicle
+entity_type: shipping_order
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: 'BO'
+      label: 'Đường bộ'
+    -
+      value: 'BAY'
+      label: 'Hàng không'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

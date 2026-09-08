@@ -1,0 +1,51 @@
+{#
+/**
+ * @file
+ * Hộp thoại kéo đơn hàng từ hệ thống hãng vận chuyển về.
+ */
+#}
+<div class="modal fade" id="pullShippingOrderModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h1 class="mb-0 fs-5">{{ "Pull orders from carrier"|t }}</h1>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ "Close"|t }}"></button>
+			</div>
+			<form method="POST" action="{{ path("shipping_integration.order_pull") }}">
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="pull-config-id" class="form-label">{{ "Connection"|t }}</label>
+						<select id="pull-config-id" name="config_id" class="form-control" required>
+							<option value="">{{ "- Select -"|t }}</option>
+							{% for config_id, config_name in filter.option_config %}
+								<option value="{{ config_id }}" {% if filter.config_id == config_id %} selected {% endif %}>{{ config_name }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="mb-3">
+						<label for="pull-type" class="form-label">{{ "Order direction"|t }}</label>
+						<select id="pull-type" name="type" class="form-control">
+							<option value="GUI">{{ "Outgoing orders"|t }}</option>
+							<option value="NHAN">{{ "Incoming orders"|t }}</option>
+						</select>
+					</div>
+					{# Hãng giới hạn mỗi lần kéo tối đa 31 ngày tính theo ngày cập nhật cuối. #}
+					<div class="mb-3">
+						<label for="pull-start-date" class="form-label">{{ "Last updated from"|t }}</label>
+						<input type="date" id="pull-start-date" name="start_date" class="form-control" value="{{ filter.date.start }}" required/>
+					</div>
+					<div class="mb-3">
+						<label for="pull-end-date" class="form-label">{{ "Last updated to"|t }}</label>
+						<input type="date" id="pull-end-date" name="end_date" class="form-control" value="{{ filter.date.end }}" required/>
+					</div>
+					<p class="small text-muted mb-0">{{ "The range must not exceed 31 days."|t }}</p>
+					<input type="hidden" name="destination" value="{{ filter.destination }}"/>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ "Close"|t }}</button>
+					<button type="submit" class="btn btn-primary">{{ "Pull orders"|t }}</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>

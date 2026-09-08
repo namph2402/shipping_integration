@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Cài đặt và cập nhật cấu hình của module shipping_integration.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Config\InstallStorage;
+
+/**
+ * Nạp bộ cấu hình bundle, field và hiển thị cho đơn hàng và địa chỉ.
+ *
+ * Module đã được bật từ trước khi có bộ cấu hình này nên hook cài đặt mặc định
+ * không chạy lại. Hàm dưới đây tạo phần cấu hình còn thiếu và ghi đè những
+ * cấu hình module tự quản lý, cụ thể là hai bảng hiển thị của term kết nối vốn
+ * chưa biết tới các field mới thêm.
+ */
+function shipping_integration_update_10001(): string {
+  \Drupal::service('config.installer')->installDefaultConfig('module', 'shipping_integration');
+
+  // Các bảng hiển thị đã tồn tại từ phiên bản trước nên installDefaultConfig()
+  // bỏ qua, phải ghi đè thủ công thì field mới mới hiện ra trên form.
+  $overrides = [
+    'core.entity_form_display.taxonomy_term.shipping_integration.default',
+    'core.entity_view_display.taxonomy_term.shipping_integration.default',
+  ];
+
+  $source = new FileStorage(
+    \Drupal::service('extension.list.module')->getPath('shipping_integration')
+    . '/' . InstallStorage::CONFIG_INSTALL_DIRECTORY
+  );
+
+  $updated = 0;
+
+  foreach ($overrides as $name) {
+    if (!$source->exists($name)) {
+      continue;
+    }
+
+    $config = \Drupal::configFactory()->getEditable($name);
+    $data = $source->read($name);
+
+    if ($uuid = $config->get('uuid')) {
+      $data['uuid'] = $uuid;
+    }
+
+    $config->setData($data)->save(TRUE);
+    $updated++;
+  }
+
+  return "Đã nạp cấu hình mặc định và cập nhật {$updated} bảng hiển thị.";
+}

@@ -1,0 +1,78 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.shipping_address.commune.field_code
+    - field.field.shipping_address.commune.field_district
+    - field.field.shipping_address.commune.field_is_new_address
+    - field.field.shipping_address.commune.field_province
+    - field.field.shipping_address.commune.field_type
+    - shipping_integration.shipping_address_type.commune
+  module:
+    - shipping_integration
+id: shipping_address.commune.default
+targetEntityType: shipping_address
+bundle: commune
+mode: default
+content:
+  label:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  status:
+    type: 'boolean_checkbox'
+    settings:
+      display_label: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_code:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_type:
+    type: 'entity_reference_autocomplete'
+    settings:
+      match_operator: 'CONTAINS'
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_is_new_address:
+    type: 'boolean_checkbox'
+    settings:
+      display_label: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_province:
+    type: 'entity_reference_autocomplete'
+    settings:
+      match_operator: 'CONTAINS'
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_district:
+    type: 'entity_reference_autocomplete'
+    settings:
+      match_operator: 'CONTAINS'
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden: {  }

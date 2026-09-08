@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_order.field_so_synced
+    - shipping_integration.shipping_order_type.vnpost
+  module:
+    - shipping_integration
+id: shipping_order.vnpost.field_so_synced
+field_name: field_so_synced
+entity_type: shipping_order
+bundle: vnpost
+label: 'Đồng bộ lúc'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: timestamp

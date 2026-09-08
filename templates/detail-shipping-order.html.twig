@@ -1,0 +1,158 @@
+{#
+/**
+ * @file
+ * Chi tiết một đơn hàng vận chuyển trong nước.
+ *
+ * Biến khả dụng:
+ * - data: đơn hàng đã được ShippingOrderService::buildRow() làm phẳng.
+ * - filter: chứa destination để các nút thao tác quay lại đúng trang này.
+ *
+ * @see \Drupal\shipping_integration\Controller\ShippingOrderController::detail()
+ */
+#}
+<div class="detail-shipping-order p-2">
+	<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+		<h4 class="mb-0 fw-bold">
+			{{ data.item_code ?: data.label }}
+			{% if data.status_label %}
+				<span class="badge bg-primary align-middle">{{ data.status_label }}</span>
+			{% endif %}
+		</h4>
+		<div class="d-flex flex-wrap gap-1 shipping-actions">
+			<button type="button" class="btn btn-sm btn-success btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_create") }}" data-draft="0"
+				data-ids="{{ data.id }}"
+				data-confirm="{{ "Push this order to the carrier?"|t }}">
+				{{ "Create order"|t }}
+			</button>
+			{# Chỉ đơn còn nháp trên hệ thống hãng mới phát hành được. #}
+			{% if data.status == "0" %}
+				<button type="button" class="btn btn-sm btn-primary btn-shipping-action"
+					data-action="{{ path("shipping_integration.order_confirm_draft") }}" data-ids="{{ data.id }}"
+					data-confirm="{{ "Publish this draft to the carrier? The order can no longer be edited freely afterwards."|t }}">
+					{{ "Publish draft"|t }}
+				</button>
+			{% endif %}
+			<button type="button" class="btn btn-sm btn-outline-primary btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_synchronize") }}" data-ids="{{ data.id }}">
+				{{ "Synchronize"|t }}
+			</button>
+			<button type="button" class="btn btn-sm btn-outline-primary btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_fee") }}" data-ids="{{ data.id }}">
+				{{ "Calculate fee"|t }}
+			</button>
+			<button type="button" class="btn btn-sm btn-warning btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_update") }}" data-ids="{{ data.id }}"
+				data-confirm="{{ "Send a correction request for this order?"|t }}">
+				{{ "Correct order"|t }}
+			</button>
+			<button type="button" class="btn btn-sm btn-danger btn-shipping-action"
+				data-action="{{ path("shipping_integration.order_cancel") }}" data-ids="{{ data.id }}"
+				data-confirm="{{ "Cancel this order?"|t }}">
+				{{ "Cancel order"|t }}
+			</button>
+			<button type="button" class="btn btn-sm btn-outline-secondary btn-shipping-history"
+				data-bs-toggle="modal" data-bs-target="#historyShippingOrderModal"
+				data-url="{{ path("shipping_integration.order_history", {"shipping_order": data.id}) }}"
+				data-item-code="{{ data.item_code }}">
+				{{ "Tracking history"|t }}
+			</button>
+			<a class="btn btn-sm btn-outline-dark" target="_blank"
+				href="{{ data.label_file ?: path("shipping_integration.order_download_label", {"shipping_order": data.id}) }}">
+				{{ "Waybill"|t }}
+			</a>
+			<a class="btn btn-sm btn-outline-secondary"
+				href="{{ path("entity.shipping_order.edit_form", {"shipping_order": data.id}, {"query": {"destination": filter.destination}}) }}">
+				{{ "Edit"|t }}
+			</a>
+		</div>
+	</div>
+
+	<form method="POST" class="shipping-action-form d-none">
+		<input type="hidden" name="order_ids" value=""/>
+		<input type="hidden" name="draft" value="0"/>
+		<input type="hidden" name="destination" value="{{ filter.destination }}"/>
+	</form>
+
+	<div class="row g-3">
+		<div class="col-12 col-lg-6">
+			<div class="card h-100">
+				<div class="card-header fw-bold">{{ "Sender"|t }}</div>
+				<div class="card-body">
+					<p class="mb-1"><strong>{{ data.sender_name }}</strong> — {{ data.sender_phone }}</p>
+					<p class="mb-0 text-muted">{{ data.sender_address }}</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-12 col-lg-6">
+			<div class="card h-100">
+				<div class="card-header fw-bold">{{ "Receiver"|t }}</div>
+				<div class="card-body">
+					<p class="mb-1"><strong>{{ data.receiver_name }}</strong> — {{ data.receiver_phone }}</p>
+					<p class="mb-0 text-muted">{{ data.receiver_address }}</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-12 col-lg-6">
+			<div class="card h-100">
+				<div class="card-header fw-bold">{{ "Parcel"|t }}</div>
+				<div class="card-body">
+					<table class="table table-sm mb-0">
+						<tbody>
+							<tr><th>{{ "Order code"|t }}</th><td>{{ data.sale_code }}</td></tr>
+							<tr><th>{{ "Item code"|t }}</th><td>{{ data.item_code }}</td></tr>
+							<tr><th>{{ "Original id"|t }}</th><td>{{ data.original_id }}</td></tr>
+							<tr><th>{{ "Service"|t }}</th><td>{{ data.service }}</td></tr>
+							<tr><th>{{ "Weight"|t }}</th><td>{{ data.weight|number_format(0, ",", ".") }} g</td></tr>
+							<tr><th>{{ "Charged weight"|t }}</th><td>{{ data.price_weight|number_format(0, ",", ".") }} g</td></tr>
+							<tr><th>{{ "Content"|t }}</th><td>{{ data.content }}</td></tr>
+							<tr><th>{{ "Delivery post office"|t }}</th><td>{{ data.bcp_name }}</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-12 col-lg-6">
+			<div class="card h-100">
+				<div class="card-header fw-bold">{{ "Fees"|t }}</div>
+				<div class="card-body">
+					<table class="table table-sm mb-0">
+						<tbody>
+							<tr><th>{{ "COD"|t }}</th><td class="text-end">{{ data.cod|number_format(0, ",", ".") }}</td></tr>
+							<tr><th>{{ "Insurance value"|t }}</th><td class="text-end">{{ data.insurance|number_format(0, ",", ".") }}</td></tr>
+							<tr><th>{{ "Main fee"|t }}</th><td class="text-end">{{ data.main_fee|number_format(0, ",", ".") }}</td></tr>
+							<tr><th>{{ "Addon fee"|t }}</th><td class="text-end">{{ data.vas_fee|number_format(0, ",", ".") }}</td></tr>
+							<tr class="fw-bold"><th>{{ "Total fee"|t }}</th><td class="text-end">{{ data.total_fee|number_format(0, ",", ".") }}</td></tr>
+							<tr><th>{{ "Connection"|t }}</th><td class="text-end">{{ data.config }}</td></tr>
+							<tr><th>{{ "Synced"|t }}</th><td class="text-end">{% if data.synced %}{{ data.synced|date("d/m/Y H:i") }}{% endif %}</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-12">
+			<div class="card">
+				<div class="card-header fw-bold">{{ "Tracking history"|t }}</div>
+				<div class="card-body">
+					{% if data.history is empty %}
+						<p class="text-muted mb-0">{{ "No tracking history yet."|t }}</p>
+					{% else %}
+						<ul class="shipping-timeline mb-0">
+							{% for step in data.history %}
+								<li>
+									<span class="shipping-timeline-date">{{ step.date }} {{ step.hour }}</span>
+									<span class="shipping-timeline-status">{{ step.status_name }}</span>
+								</li>
+							{% endfor %}
+						</ul>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+{{ include('@shipping_integration/templates/modal/modal-history.html.twig') }}

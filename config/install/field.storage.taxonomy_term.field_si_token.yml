@@ -1,4 +1,4 @@
-langcode: vi
+langcode: en
 status: true
 dependencies:
   module:
@@ -7,8 +7,7 @@ id: taxonomy_term.field_si_token
 field_name: field_si_token
 entity_type: taxonomy_term
 type: string_long
-settings:
-  case_sensitive: false
+settings: {  }
 module: core
 locked: false
 cardinality: 1

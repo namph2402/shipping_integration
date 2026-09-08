@@ -1,51 +1,78 @@
-langcode: vi
+langcode: en
 status: true
 dependencies:
   config:
     - field.field.taxonomy_term.shipping_integration.field_si_code
+    - field.field.taxonomy_term.shipping_integration.field_si_contract
+    - field.field.taxonomy_term.shipping_integration.field_si_expiration
     - field.field.taxonomy_term.shipping_integration.field_si_host
     - field.field.taxonomy_term.shipping_integration.field_si_password
     - field.field.taxonomy_term.shipping_integration.field_si_token
+    - field.field.taxonomy_term.shipping_integration.field_si_type
     - field.field.taxonomy_term.shipping_integration.field_si_username
     - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
 id: taxonomy_term.shipping_integration.default
 targetEntityType: taxonomy_term
 bundle: shipping_integration
 mode: default
 content:
-  field_si_code:
-    type: string
+  field_si_type:
+    type: 'entity_reference_label'
     label: above
     settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 3
-    region: content
-  field_si_host:
-    type: string
-    label: above
-    settings:
-      link_to_entity: false
+      link: true
     third_party_settings: {  }
     weight: 0
     region: content
-  field_si_password:
-    type: string
+  field_si_host:
+    type: 'string'
     label: above
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 2
-    region: content
-  field_si_username:
-    type: string
-    label: above
-    settings:
-      link_to_entity: false
+    settings: {  }
     third_party_settings: {  }
     weight: 1
     region: content
-hidden:
-  description: true
-  field_si_token: true
-  langcode: true
+  field_si_username:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_si_password:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_si_code:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_si_contract:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_si_token:
+    type: 'basic_string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_si_expiration:
+    type: 'string'
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+hidden: {  }

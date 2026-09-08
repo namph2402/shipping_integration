@@ -1,0 +1,44 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - options
+    - shipping_integration
+id: shipping_order.field_so_service
+field_name: field_so_service
+entity_type: shipping_order
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: 'CTN001'
+      label: 'CTN001 - Tiết kiệm (TMĐT)'
+    -
+      value: 'CTN007'
+      label: 'CTN007 - Tiết kiệm (TMĐT)'
+    -
+      value: 'CTN009'
+      label: 'CTN009 - Tiêu chuẩn (TMĐT)'
+    -
+      value: 'ETN011'
+      label: 'ETN011 - Nhanh (Tài liệu hàng hóa)'
+    -
+      value: 'ETN013'
+      label: 'ETN013 - Hỏa tốc'
+    -
+      value: 'ETN031'
+      label: 'ETN031 - Nhanh (Tài liệu hàng hóa)'
+    -
+      value: 'ETN037'
+      label: 'ETN037 - Nhanh (TMĐT)'
+    -
+      value: 'PTN001'
+      label: 'PTN001 - Logistic (trên 30kg)'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

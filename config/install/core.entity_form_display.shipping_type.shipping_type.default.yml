@@ -1,0 +1,45 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.shipping_type.shipping_type.field_code
+    - field.field.shipping_type.shipping_type.field_note
+  module:
+    - shipping_integration
+id: shipping_type.shipping_type.default
+targetEntityType: shipping_type
+bundle: shipping_type
+mode: default
+content:
+  label:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  status:
+    type: 'boolean_checkbox'
+    settings:
+      display_label: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_code:
+    type: 'string_textfield'
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_note:
+    type: 'string_textarea'
+    settings:
+      rows: 4
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+hidden: {  }

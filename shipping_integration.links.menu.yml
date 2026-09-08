@@ -1,3 +1,16 @@
+shipping_integration.admin:
+  title: 'Vận chuyển'
+  description: 'Quản lý đơn hàng và cấu hình kết nối các hãng vận chuyển.'
+  route_name: shipping_integration.order_list
+  parent: system.admin
+  weight: 10
+
+shipping_integration.order_list:
+  title: 'Đơn vận chuyển'
+  description: 'Danh sách đơn hàng trong nước.'
+  route_name: shipping_integration.order_list
+  parent: shipping_integration.admin
+
 entity.shipping_address_type.collection:
   title: 'Shipping address types'
   description: 'Manage and CRUD actions on Shipping address type.'
@@ -25,7 +38,7 @@ entity.shipping_order.collection:
 entity.shipping_type.settings:
   title: 'Shipping type'
   description: 'Configure a Shipping type entity type.'
-  route_name:  entity.shipping_type.settings
+  route_name: entity.shipping_type.settings
   parent: system.admin_structure
 
 entity.shipping_type.collection:

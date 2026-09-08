@@ -1,0 +1,19 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_type.field_note
+  module:
+    - shipping_integration
+id: shipping_type.shipping_type.field_note
+field_name: field_note
+entity_type: shipping_type
+bundle: shipping_type
+label: 'Ghi chú'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

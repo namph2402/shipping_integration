@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - shipping_integration
+id: shipping_order.field_so_org_accept
+field_name: field_so_org_accept
+entity_type: shipping_order
+type: string
+settings:
+  max_length: 255
+  is_ascii: false
+  case_sensitive: false
+module: core
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

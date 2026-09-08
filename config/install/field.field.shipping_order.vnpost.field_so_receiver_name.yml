@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_order.field_so_receiver_name
+    - shipping_integration.shipping_order_type.vnpost
+  module:
+    - shipping_integration
+id: shipping_order.vnpost.field_so_receiver_name
+field_name: field_so_receiver_name
+entity_type: shipping_order
+bundle: vnpost
+label: 'Người nhận'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

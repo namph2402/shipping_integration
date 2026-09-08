@@ -7,10 +7,37 @@ services:
     class: Drupal\shipping_integration\ShippingProvidersPluginManager
     parent: default_plugin_manager
 
+  shipping_integration.get_config:
+    class: Drupal\shipping_integration\Service\GetConfigShipping
+    arguments:
+      - "@plugin.manager.shipping_providers"
+      - "@entity_type.manager"
+      - "@messenger"
+      - "@logger.channel.shipping_integration"
+      - "@datetime.time"
+
   shipping_integration.handle_shipping:
     class: Drupal\shipping_integration\Service\HandleShipping
-    arguments: ["@plugin.manager.shipping_providers", "@entity_type.manager", "@entity_field.manager", "@file_system", "@file.repository", "@logger.channel.shipping_integration", "@token", "@database"]
+    arguments:
+      - "@plugin.manager.shipping_providers"
+      - "@shipping_integration.get_config"
+      - "@entity_type.manager"
+      - "@file_system"
+      - "@file.repository"
+      - "@logger.channel.shipping_integration"
+      - "@datetime.time"
 
   shipping_integration.synchronize_addresses:
     class: Drupal\shipping_integration\Service\SynchronizeAddresses
-    arguments: ["@plugin.manager.shipping_providers", "@entity_type.manager", "@logger.channel.shipping_integration", "@database"]
+    arguments:
+      - "@plugin.manager.shipping_providers"
+      - "@shipping_integration.get_config"
+      - "@entity_type.manager"
+      - "@logger.channel.shipping_integration"
+      - "@database"
+
+  shipping_integration.order_service:
+    class: Drupal\shipping_integration\ShippingOrderService
+    arguments:
+      - "@entity_type.manager"
+      - "@entity_field.manager"

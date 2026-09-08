@@ -10,4 +10,14 @@ administer shipping_order types:
 
 administer shipping_type:
   title: 'Administer shipping types'
+  description: 'Maintain shipping carriers and their connection settings.'
   restrict access: true
+
+administer shipping order:
+  title: 'Administer shipping orders'
+  description: 'Create, update, cancel and synchronize shipping orders with carriers.'
+  restrict access: true
+
+access shipping order:
+  title: 'Access shipping order list'
+  description: 'View the shipping order list and detail pages.'

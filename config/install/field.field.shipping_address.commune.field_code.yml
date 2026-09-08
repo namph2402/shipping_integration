@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_address.field_code
+    - shipping_integration.shipping_address_type.commune
+  module:
+    - shipping_integration
+id: shipping_address.commune.field_code
+field_name: field_code
+entity_type: shipping_address
+bundle: commune
+label: 'Mã địa chỉ'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string
