@@ -26,6 +26,12 @@
   font-weight: 600;
 }
 
+/* Ô chọn lệnh đủ rộng để đọc hết tên lệnh dài nhất. */
+.shipping-actions .shipping-action-select {
+  min-width: 18rem;
+  max-width: 100%;
+}
+
 /* Bảng cuộn trong khung của nó, phần đầu bảng đứng yên khi cuộn dọc. */
 .shipping-table-wrapper {
   overflow: auto;

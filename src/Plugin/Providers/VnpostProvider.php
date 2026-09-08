@@ -235,7 +235,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
    */
   public function createOrder(array $config, array $order): array {
     $payload = [
-      // 0 lưu nháp, 1 phát hành ngay.
       "orderCreationStatus" => !empty($order["draft"]) ? 0 : 1,
       "type" => (string) ($order["type"] ?? "GUI"),
       "customerCode" => (string) ($config["shipping_code"] ?? ""),
@@ -346,14 +345,36 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
 
     $response = is_array($response["data"] ?? NULL) ? $response["data"] : $response;
 
-    return [
-      "service" => (string) ($response["serviceCode"] ?? ""),
-      "main_fee" => (float) ($response["mainFee"] ?? 0),
-      "vas_fee" => (float) ($response["vasfee"] ?? $response["vasFee"] ?? 0),
-      "total_fee" => (float) ($response["totalFee"] ?? 0),
-      "price_weight" => (int) ($response["priceWeight"] ?? 0),
-      "addon_service" => $response["addonService"] ?? [],
+    // Hãng luôn trả về một mảng bảng cước, mỗi dịch vụ một dòng: khai rõ mã
+    // dịch vụ thì mảng chỉ có đúng dòng đó, bỏ trống mã thì có cước của mọi
+    // dịch vụ đang mở cho tài khoản.
+    $records = array_values(array_filter(
+      array_is_list($response) ? $response : [$response],
+      "is_array",
+    ));
+
+    $wanted = (string) ($order["service"] ?? "");
+    $matched = [];
+
+    foreach ($records as $record) {
+      if ($wanted === "" || (string) ($record["serviceCode"] ?? "") === $wanted) {
+        $matched = $record;
+        break;
+      }
+    }
+
+    $quote = static fn(array $record): array => [
+      "service" => (string) ($record["serviceCode"] ?? ""),
+      "service_name" => (string) ($record["serviceName"] ?? ""),
+      "main_fee" => (float) ($record["mainFee"] ?? 0),
+      "vas_fee" => (float) ($record["vasfee"] ?? $record["vasFee"] ?? 0),
+      "total_fee" => (float) ($record["totalFee"] ?? 0),
+      "price_weight" => (int) ($record["priceWeight"] ?? 0),
+      "dim_weight" => (int) ($record["weightConvert"] ?? 0),
+      "addon_service" => $record["addonService"] ?? [],
     ];
+
+    return $quote($matched) + ["services" => array_map($quote, $records)];
   }
 
   /**

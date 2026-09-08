@@ -10,3 +10,14 @@ shipping_order:
     - core/drupal
     - core/once
     - core/drupalSettings
+
+shipping_order_form:
+  css:
+    theme:
+      css/shipping-order-form.css: {}
+  js:
+    js/shipping-order-form.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
+    - core/drupal.ajax

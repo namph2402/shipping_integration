@@ -45,13 +45,47 @@ viết thêm một plugin, không phải sửa gì ở tầng entity hay giao di
 
 Các lệnh trên hai màn hình này: tạo đơn, lưu nháp, phát hành đơn nháp, hiệu
 chỉnh, hủy, lấy kết quả phê duyệt, đồng bộ trạng thái, tính cước, in vận đơn,
-kéo đơn từ hệ thống hãng về, xem hành trình.
+kéo đơn từ hệ thống hãng về, xem hành trình. Tất cả gom trong một ô chọn kèm
+nút **Thao tác** ở đầu trang: chọn lệnh, tích các dòng cần chạy (số dòng đang
+chọn hiện ngay cạnh nút) rồi bấm **Thao tác**.
 
 Luồng nháp gồm hai bước: **Save draft** đẩy đơn sang hãng ở trạng thái *Lưu
 nháp* (`orderCreationStatus = 0`) — đơn đã nằm trên hệ thống hãng nhưng chưa
 vào khai thác, còn xóa được; **Publish draft** mới thực sự phát hành bưu gửi.
-Nút phát hành trên trang chi tiết chỉ hiện khi đơn còn ở trạng thái nháp; trên
+Lệnh phát hành trên trang chi tiết chỉ hiện trong ô chọn khi đơn còn nháp; trên
 trang danh sách thì đơn không còn nháp sẽ bị bỏ qua kèm thông báo.
+
+## Form khai đơn
+
+`/shipping-order/add/vnpost` và `/shipping-order/{id}/edit` dùng lại bố cục màn
+khai đơn của MyVNPost: cột trái là **Người gửi**, **Người nhận**, **Chọn dịch
+vụ**; cột phải là **Thông tin hàng hoá** và **Yêu cầu thêm**; đáy màn hình là
+thanh dính hiển thị khối lượng tính cước, tổng cước tạm tính, tổng tiền thu hộ
+kèm nhóm nút lệnh.
+
+- **Địa chỉ** dùng select liên tầng, mặc định bộ hai cấp (Tỉnh/Thành phố →
+  Phường/Xã) đúng như hãng đang khai. Mở lại đơn cũ còn giữ địa chỉ ba cấp thì
+  form tự hiện thêm ô Quận/Huyện để dữ liệu cũ không bị hỏng.
+- **Quy đổi (gram)** tính ngay trên trình duyệt theo `dài × rộng × cao / 6`,
+  con số chính thức lấy từ `weightConvert` hãng trả về khi tính cước.
+- **Tính cước** lưu đơn rồi gọi `/ServicesCharge` cho đúng dịch vụ đang chọn và
+  ghi lại cước vào đơn. **Xem cước các dịch vụ** hỏi cùng endpoint nhưng bỏ
+  trống `serviceCode` nên hãng trả bảng cước của mọi dịch vụ đang mở cho tài
+  khoản; lệnh này chỉ dựng đơn tạm trong bộ nhớ, không lưu gì.
+- **Tạo đơn** / **Lưu nháp** lưu đơn rồi đẩy sang hãng (`orderCreationStatus`
+  1 và 0). Đơn đã có số hiệu bưu gửi thì hai nút này nhường chỗ cho **Hiệu
+  chỉnh đơn**. **Lưu** chỉ ghi tại chỗ, không gọi hãng.
+- Các trường bắt buộc bám đúng cột *mustHave* của tài liệu `/CreateOrder`:
+  người gửi và người nhận (tên, điện thoại, địa chỉ), dịch vụ, nội dung, khối
+  lượng, hình thức gửi.
+
+Những khối có trên cổng MyVNPost nhưng API public không nhận — bảng *Chi tiết
+hàng hoá*, *Ảnh đính kèm*, *Loại hàng*, *Tủ PUDO*, *Hợp đồng C* — cố tình không
+dựng, để không sinh ra dữ liệu mà hãng không bao giờ đọc. Hợp đồng lấy từ term
+kết nối (`field_si_contract`) và hiện ngay dưới ô chọn kết nối.
+
+Field hệ thống (số hiệu bưu gửi, trạng thái, cước, hành trình, vận đơn, dữ liệu
+thô…) bị gỡ khỏi form: chỉ hãng và module ghi vào đó.
 
 ## Ánh xạ sang API MyVNPost
 
@@ -89,6 +123,18 @@ giá → `GTG008`/`PROP0026`.
    hãng.
 3. Tạo entity `shipping_type` với `field_code` = mã plugin, rồi tạo term kết
    nối trỏ tới nó.
+
+## Bản dịch tiếng Việt
+
+Chuỗi giao diện của module nằm ở `translations/shipping_integration.vi.po`,
+`shipping_integration.info.yml` đã khai báo `interface translation project` và
+`interface translation server pattern` để locale tìm tới file này. File chỉ có tác dụng khi site đã cài
+ngôn ngữ tiếng Việt (module `language` + `locale`, thêm tiếng Việt tại
+`/admin/config/regional/language`); site chỉ có tiếng Anh thì giao diện vẫn hiện
+chuỗi gốc. Sau khi bật tiếng Việt, nạp bản dịch bằng `drush locale:import vi
+modules/custorm/shipping_integration/translations/shipping_integration.vi.po`
+(hoặc `drush locale:check && drush locale:update`), rồi `drush cr`. Thêm chuỗi
+mới thì bổ sung cặp `msgid`/`msgstr` vào file rồi import lại.
 
 ## Giới hạn
 

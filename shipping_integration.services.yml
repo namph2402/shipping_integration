@@ -41,3 +41,8 @@ services:
     arguments:
       - "@entity_type.manager"
       - "@entity_field.manager"
+
+  shipping_integration.address_options:
+    class: Drupal\shipping_integration\Service\AddressOptions
+    arguments:
+      - "@entity_type.manager"

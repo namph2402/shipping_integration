@@ -1,0 +1,130 @@
+/**
+ * @file
+ * Giao diện form tạo và sửa đơn vận chuyển.
+ */
+
+.shipping-order-form .shipping-card {
+  border-color: #dee2e6;
+}
+
+.shipping-order-form .shipping-card .card-header {
+  padding: 0.5rem 0.75rem;
+  border-bottom-color: #dee2e6;
+  background-color: #f8f9fa;
+  color: #0d6efd;
+}
+
+.shipping-order-form .shipping-card .card-body {
+  padding: 0.75rem;
+}
+
+/* Widget của Drupal tự bọc thêm một lớp div, phải cho nó chiếm hết cột thì
+   lưới Bootstrap mới xếp đúng hai trường trên một hàng. */
+.shipping-order-form .shipping-card .card-body > .form-item {
+  margin-bottom: 0.5rem;
+}
+
+.shipping-order-form .shipping-card .card-body > .form-item > .form-item,
+.shipping-order-form .shipping-card .card-body > .form-item .field--widget-string-textfield {
+  margin-bottom: 0;
+}
+
+.shipping-order-form .form-item label {
+  margin-bottom: 0.15rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Tiêu đề nhỏ ngăn các nhóm trong cùng một thẻ. */
+.shipping-order-form .shipping-subheader {
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: #fff8e1;
+  color: #8a6d3b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.shipping-order-form .shipping-connection-info {
+  margin-bottom: 0.25rem;
+}
+
+.shipping-order-form .shipping-connection-item + .shipping-connection-item::before {
+  padding: 0 0.35rem;
+  color: #adb5bd;
+  content: "·";
+}
+
+/* Nhóm nút tròn của hình thức gửi và yêu cầu khi phát nằm ngang cho gọn. */
+.shipping-order-form .shipping-inline-radios .form-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.shipping-order-form .shipping-checkbox-field {
+  display: flex;
+  align-items: flex-end;
+}
+
+.shipping-order-form .shipping-note-presets {
+  margin-top: -0.25rem;
+}
+
+.shipping-order-form .shipping-dim-weight {
+  padding: 0;
+  font-weight: 600;
+}
+
+/* Thanh tổng hợp cước và nhóm nút dính đáy màn hình như màn khai đơn của hãng. */
+.shipping-order-form .shipping-form-summary,
+.shipping-order-form .shipping-form-actions {
+  position: sticky;
+  z-index: 3;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #dee2e6;
+  background-color: #fff;
+}
+
+.shipping-order-form .shipping-form-summary {
+  bottom: 3.5rem;
+  gap: 1.5rem;
+}
+
+.shipping-order-form .shipping-form-actions {
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  border-top: 0;
+}
+
+.shipping-order-form .shipping-summary-label {
+  color: #6c757d;
+  font-size: 0.8125rem;
+}
+
+.shipping-order-form .shipping-summary-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Nhóm nút tròn của Drupal bọc trong fieldset, thu nhỏ tiêu đề cho bằng các
+   nhãn còn lại thay vì to như tiêu đề mục. */
+.shipping-order-form fieldset legend,
+.shipping-order-form fieldset legend .fieldset-legend {
+  margin-bottom: 0.15rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.shipping-order-form fieldset {
+  margin-bottom: 0;
+}
+
+/* Chừa chỗ cho hai thanh dính đáy, tránh che mất trường cuối cùng. */
+.shipping-order-form .shipping-form-layout {
+  padding-bottom: 1rem;
+}

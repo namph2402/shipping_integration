@@ -109,7 +109,10 @@ interface ShippingProvidersInterface {
    *   Đơn hàng đã chuẩn hoá.
    *
    * @return array
-   *   Bảng cước gồm main_fee, vas_fee, total_fee, price_weight, service.
+   *   Bảng cước của dịch vụ đang khai gồm main_fee, vas_fee, total_fee,
+   *   price_weight, dim_weight, service, service_name và addon_service; khoá
+   *   "services" chứa bảng cước của mọi dịch vụ hãng trả về, dùng khi cần
+   *   so sánh cước giữa các dịch vụ.
    */
   public function calculateFee(array $config, array $order): array;
 

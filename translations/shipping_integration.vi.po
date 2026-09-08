@@ -1,0 +1,940 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Shipping integration\n"
+"POT-Creation-Date: 2026-09-08 00:00+0700\n"
+"PO-Revision-Date: 2026-09-08 00:00+0700\n"
+"Last-Translator: \n"
+"Language-Team: Vietnamese\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+# Trang danh sách và chi tiết đơn vận chuyển (templates, js).
+
+#: templates/list-shipping-order.html.twig
+msgid "Domestic shipping orders"
+msgstr "Đơn vận chuyển trong nước"
+
+#: templates/list-shipping-order.html.twig
+msgid "All connections"
+msgstr "Tất cả kết nối"
+
+#: templates/list-shipping-order.html.twig
+msgid "All statuses"
+msgstr "Tất cả trạng thái"
+
+#: templates/list-shipping-order.html.twig
+msgid "Item code, order code, phone"
+msgstr "Mã bưu gửi, mã đơn hàng, điện thoại"
+
+#: templates/list-shipping-order.html.twig
+msgid "Last Week"
+msgstr "Tuần trước"
+
+#: templates/list-shipping-order.html.twig
+msgid "Last Month"
+msgstr "Tháng trước"
+
+#: templates/list-shipping-order.html.twig
+msgid "Full date"
+msgstr "Toàn bộ thời gian"
+
+#: templates/list-shipping-order.html.twig
+msgid "All"
+msgstr "Tất cả"
+
+#: templates/list-shipping-order.html.twig
+msgid "Columns"
+msgstr "Cột hiển thị"
+
+#: templates/list-shipping-order.html.twig
+msgid "Export Excel"
+msgstr "Xuất Excel"
+
+#: templates/list-shipping-order.html.twig
+msgid "Pagination"
+msgstr "Phân trang"
+
+#: templates/list-shipping-order.html.twig
+msgid "View detail"
+msgstr "Xem chi tiết"
+
+#: templates/list-shipping-order.html.twig
+msgid "Download waybill"
+msgstr "Tải vận đơn"
+
+#: templates/list-shipping-order.html.twig
+msgid "View waybill"
+msgstr "Xem vận đơn"
+
+# Ô chọn thao tác và các lệnh gửi sang hãng.
+
+#: templates/list-shipping-order.html.twig
+msgid "Action"
+msgstr "Thao tác"
+
+#: templates/list-shipping-order.html.twig
+msgid "- Choose an action -"
+msgstr "- Chọn thao tác -"
+
+#: templates/list-shipping-order.html.twig
+msgid "Apply action"
+msgstr "Thao tác"
+
+#: templates/list-shipping-order.html.twig
+msgid "Send to carrier"
+msgstr "Gửi sang hãng"
+
+#: templates/list-shipping-order.html.twig
+msgid "Get from carrier"
+msgstr "Lấy từ hãng"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Other"
+msgstr "Khác"
+
+#: templates/list-shipping-order.html.twig
+msgid "Create order"
+msgstr "Tạo đơn"
+
+#: templates/list-shipping-order.html.twig
+msgid "Save draft"
+msgstr "Lưu nháp"
+
+#: templates/list-shipping-order.html.twig
+msgid "Publish draft"
+msgstr "Phát hành đơn nháp"
+
+#: templates/list-shipping-order.html.twig
+msgid "Correct order"
+msgstr "Hiệu chỉnh đơn"
+
+#: templates/list-shipping-order.html.twig
+msgid "Cancel order"
+msgstr "Hủy đơn"
+
+#: templates/list-shipping-order.html.twig
+msgid "Approval result"
+msgstr "Kết quả phê duyệt"
+
+#: templates/list-shipping-order.html.twig
+msgid "Synchronize"
+msgstr "Đồng bộ"
+
+#: templates/list-shipping-order.html.twig
+msgid "Calculate fee"
+msgstr "Tính cước"
+
+#: templates/list-shipping-order.html.twig
+msgid "Print waybill"
+msgstr "In vận đơn"
+
+#: templates/list-shipping-order.html.twig
+msgid "Pull orders"
+msgstr "Kéo đơn về"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Waybill"
+msgstr "Vận đơn"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Edit"
+msgstr "Sửa"
+
+# Câu hỏi xác nhận trước khi chạy lệnh.
+
+#: templates/list-shipping-order.html.twig
+msgid "Push the selected orders to the carrier?"
+msgstr "Đẩy các đơn đã chọn sang hãng vận chuyển?"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Push this order to the carrier?"
+msgstr "Đẩy đơn này sang hãng vận chuyển?"
+
+#: templates/list-shipping-order.html.twig
+msgid "Save the selected orders as drafts on the carrier system?"
+msgstr "Lưu các đơn đã chọn thành đơn nháp trên hệ thống hãng?"
+
+#: templates/list-shipping-order.html.twig
+msgid "Publish the selected drafts to the carrier? The orders can no longer be edited freely afterwards."
+msgstr "Phát hành các đơn nháp đã chọn sang hãng? Sau khi phát hành, đơn không còn sửa tự do được nữa."
+
+#: templates/detail-shipping-order.html.twig
+msgid "Publish this draft to the carrier? The order can no longer be edited freely afterwards."
+msgstr "Phát hành đơn nháp này sang hãng? Sau khi phát hành, đơn không còn sửa tự do được nữa."
+
+#: templates/list-shipping-order.html.twig
+msgid "Send a correction request for the selected orders?"
+msgstr "Gửi yêu cầu hiệu chỉnh cho các đơn đã chọn?"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Send a correction request for this order?"
+msgstr "Gửi yêu cầu hiệu chỉnh cho đơn này?"
+
+#: templates/list-shipping-order.html.twig
+msgid "Cancel the selected orders?"
+msgstr "Hủy các đơn đã chọn?"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Cancel this order?"
+msgstr "Hủy đơn này?"
+
+# Cột bảng và thông tin đơn hàng.
+
+#: templates/list-shipping-order.html.twig
+msgid "No."
+msgstr "STT"
+
+#: templates/list-shipping-order.html.twig
+msgid "Item code"
+msgstr "Mã bưu gửi"
+
+#: templates/list-shipping-order.html.twig
+msgid "Order code"
+msgstr "Mã đơn hàng"
+
+#: templates/list-shipping-order.html.twig
+msgid "Created"
+msgstr "Ngày tạo"
+
+#: templates/list-shipping-order.html.twig
+msgid "Status"
+msgstr "Trạng thái"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Sender"
+msgstr "Người gửi"
+
+#: templates/list-shipping-order.html.twig
+msgid "Receiver"
+msgstr "Người nhận"
+
+#: templates/list-shipping-order.html.twig
+msgid "Receiver phone"
+msgstr "Điện thoại người nhận"
+
+#: templates/list-shipping-order.html.twig
+msgid "Receiver address"
+msgstr "Địa chỉ người nhận"
+
+#: templates/list-shipping-order.html.twig
+msgid "Service"
+msgstr "Dịch vụ"
+
+#: templates/list-shipping-order.html.twig
+msgid "Weight"
+msgstr "Khối lượng"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Charged weight"
+msgstr "Khối lượng tính cước"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Content"
+msgstr "Nội dung hàng"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Parcel"
+msgstr "Bưu gửi"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Original id"
+msgstr "Mã gốc"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Fees"
+msgstr "Cước phí"
+
+#: templates/list-shipping-order.html.twig
+msgid "COD"
+msgstr "COD"
+
+#: templates/detail-shipping-order.html.twig
+msgid "Insurance value"
+msgstr "Giá trị khai giá"
+
+#: templates/list-shipping-order.html.twig
+msgid "Main fee"
+msgstr "Cước chính"
+
+#: templates/list-shipping-order.html.twig
+msgid "Addon fee"
+msgstr "Cước cộng thêm"
+
+#: templates/list-shipping-order.html.twig
+msgid "Total fee"
+msgstr "Tổng cước"
+
+#: templates/list-shipping-order.html.twig
+msgid "Delivery post office"
+msgstr "Bưu cục phát"
+
+#: templates/list-shipping-order.html.twig
+msgid "Connection"
+msgstr "Kết nối"
+
+#: templates/list-shipping-order.html.twig
+msgid "Synced"
+msgstr "Đồng bộ lúc"
+
+# Hộp thoại kéo đơn và hành trình bưu gửi.
+
+#: templates/modal/modal-pull.html.twig
+msgid "Pull orders from carrier"
+msgstr "Kéo đơn từ hệ thống hãng"
+
+#: templates/modal/modal-pull.html.twig
+msgid "- Select -"
+msgstr "- Chọn -"
+
+#: templates/modal/modal-pull.html.twig
+msgid "Order direction"
+msgstr "Chiều đơn hàng"
+
+#: templates/modal/modal-pull.html.twig
+msgid "Outgoing orders"
+msgstr "Đơn gửi đi"
+
+#: templates/modal/modal-pull.html.twig
+msgid "Incoming orders"
+msgstr "Đơn nhận về"
+
+#: templates/modal/modal-pull.html.twig
+msgid "Last updated from"
+msgstr "Cập nhật cuối từ ngày"
+
+#: templates/modal/modal-pull.html.twig
+msgid "Last updated to"
+msgstr "Cập nhật cuối đến ngày"
+
+#: templates/modal/modal-pull.html.twig
+msgid "The range must not exceed 31 days."
+msgstr "Khoảng thời gian không được vượt quá 31 ngày."
+
+#: templates/modal/modal-history.html.twig
+msgid "Tracking history"
+msgstr "Hành trình bưu gửi"
+
+#: templates/modal/modal-history.html.twig
+msgid "Close"
+msgstr "Đóng"
+
+#: templates/modal/modal-history.html.twig
+msgid "Loading..."
+msgstr "Đang tải..."
+
+#: templates/detail-shipping-order.html.twig
+msgid "No tracking history yet."
+msgstr "Chưa có hành trình bưu gửi."
+
+# Thông báo phía trình duyệt.
+
+#: js/shipping-order.js
+msgid "Please choose an action."
+msgstr "Vui lòng chọn một thao tác."
+
+#: js/shipping-order.js
+msgid "Please choose at least one order."
+msgstr "Vui lòng chọn ít nhất một đơn hàng."
+
+#: js/shipping-order.js
+msgid "@count order(s) selected"
+msgstr "Đã chọn @count đơn"
+
+#: js/shipping-order.js
+msgid "Cannot load the tracking history."
+msgstr "Không tải được hành trình bưu gửi."
+
+#: js/shipping-table.js
+msgid "@from-@to of @total"
+msgstr "@from-@to trên @total"
+
+# Thông báo phía máy chủ.
+
+#: src/Controller/ShippingOrderController.php
+msgid "Processed @count order(s) successfully."
+msgstr "Đã xử lý thành công @count đơn hàng."
+
+#: src/Controller/ShippingOrderController.php
+msgid "@order: @message"
+msgstr "@order: @message"
+
+#: src/Controller/ShippingOrderController.php
+msgid "Unknown error"
+msgstr "Lỗi không xác định"
+
+#: src/Controller/ShippingOrderController.php
+msgid "Please choose a shipping connection."
+msgstr "Vui lòng chọn một kết nối vận chuyển."
+
+#: src/Controller/ShippingOrderController.php
+msgid "Pull orders failed"
+msgstr "Kéo đơn về thất bại"
+
+#: src/Service/GetConfigShipping.php
+msgid "The system is experiencing problems"
+msgstr "Hệ thống đang gặp sự cố"
+
+#: src/Service/GetConfigShipping.php
+msgid "Get token successfully"
+msgstr "Lấy token thành công"
+
+#: src/Service/HandleShipping.php
+msgid "The shipping provider is not configured correctly."
+msgstr "Nhà cung cấp vận chuyển chưa được cấu hình đúng."
+
+#: src/Service/SynchronizeAddresses.php
+msgid "Synchronize addresses failed"
+msgstr "Đồng bộ danh mục địa chỉ thất bại"
+
+# Đồng bộ danh mục địa chỉ.
+
+#: src/Form/SynchronizeAddressesForm.php
+msgid "Synchronize address ?"
+msgstr "Đồng bộ danh mục địa chỉ?"
+
+#: src/Form/SynchronizeAddressesForm.php
+msgid "Address categories can have tens of thousands of records, so this command takes a long time to run. Existing addresses will be skipped, so you can run it multiple times."
+msgstr "Danh mục địa chỉ có thể lên tới hàng chục nghìn bản ghi nên lệnh này chạy khá lâu. Địa chỉ đã có sẽ được bỏ qua nên bạn chạy lại nhiều lần vẫn an toàn."
+
+#: src/Plugin/Derivative/SynchronizeAddressesLocalAction.php
+msgid "Synchronize address: @config"
+msgstr "Đồng bộ địa chỉ: @config"
+
+# Thực thể và biểu mẫu quản trị.
+
+#: src/Entity/ShippingOrder.php
+msgid "Shipping order"
+msgstr "Đơn vận chuyển"
+
+#: src/Entity/ShippingOrder.php
+msgid "shipping order"
+msgstr "đơn vận chuyển"
+
+#: src/Entity/ShippingOrder.php
+msgid "Shipping orders"
+msgstr "Đơn vận chuyển"
+
+#: src/Entity/ShippingOrder.php
+msgid "shipping orders"
+msgstr "đơn vận chuyển"
+
+#: src/Entity/ShippingOrderType.php
+msgid "Shipping order type"
+msgstr "Loại đơn vận chuyển"
+
+#: src/Entity/ShippingOrderType.php
+msgid "shipping order type"
+msgstr "loại đơn vận chuyển"
+
+#: src/Entity/ShippingOrderType.php
+msgid "Shipping order types"
+msgstr "Loại đơn vận chuyển"
+
+#: src/Entity/ShippingOrderType.php
+msgid "shipping orders types"
+msgstr "loại đơn vận chuyển"
+
+#: src/Entity/ShippingAddress.php
+msgid "Shipping address"
+msgstr "Địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddress.php
+msgid "shipping address"
+msgstr "địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddress.php
+msgid "Shipping addresses"
+msgstr "Địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddress.php
+msgid "shipping addresses"
+msgstr "địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddressType.php
+msgid "Shipping address type"
+msgstr "Loại địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddressType.php
+msgid "shipping address type"
+msgstr "loại địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddressType.php
+msgid "Shipping address types"
+msgstr "Loại địa chỉ vận chuyển"
+
+#: src/Entity/ShippingAddressType.php
+msgid "shipping addresses types"
+msgstr "loại địa chỉ vận chuyển"
+
+#: src/Entity/ShippingType.php
+msgid "Shipping type"
+msgstr "Hãng vận chuyển"
+
+#: src/Entity/ShippingType.php
+msgid "shipping type"
+msgstr "hãng vận chuyển"
+
+#: src/Entity/ShippingType.php
+msgid "Shipping types"
+msgstr "Hãng vận chuyển"
+
+#: src/Entity/ShippingType.php
+msgid "shipping types"
+msgstr "hãng vận chuyển"
+
+#: src/Entity/ShippingOrder.php
+msgid "Authored on"
+msgstr "Ngày tạo"
+
+#: src/Entity/ShippingOrder.php
+msgid "Changed"
+msgstr "Ngày cập nhật"
+
+#: src/Entity/ShippingOrder.php
+msgid "The time that the shipping order was created."
+msgstr "Thời điểm đơn vận chuyển được tạo."
+
+#: src/Entity/ShippingOrder.php
+msgid "The time that the shipping order was last edited."
+msgstr "Thời điểm đơn vận chuyển được sửa lần cuối."
+
+#: src/Entity/ShippingAddress.php
+msgid "The time that the shipping address was created."
+msgstr "Thời điểm địa chỉ vận chuyển được tạo."
+
+#: src/Entity/ShippingAddress.php
+msgid "The time that the shipping address was last edited."
+msgstr "Thời điểm địa chỉ vận chuyển được sửa lần cuối."
+
+#: src/Entity/ShippingType.php
+msgid "The time that the shipping type was created."
+msgstr "Thời điểm hãng vận chuyển được tạo."
+
+#: src/Entity/ShippingType.php
+msgid "The time that the shipping type was last edited."
+msgstr "Thời điểm hãng vận chuyển được sửa lần cuối."
+
+#: src/ShippingOrderListBuilder.php
+msgid "ID"
+msgstr "ID"
+
+#: src/ShippingOrderListBuilder.php
+msgid "Label"
+msgstr "Nhãn"
+
+#: src/ShippingOrderListBuilder.php
+msgid "Enabled"
+msgstr "Bật"
+
+#: src/ShippingOrderListBuilder.php
+msgid "Disabled"
+msgstr "Tắt"
+
+#: src/ShippingOrderListBuilder.php
+msgid "Updated"
+msgstr "Ngày cập nhật"
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "The human-readable name of this shipping order type."
+msgstr "Tên hiển thị của loại đơn vận chuyển này."
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "A unique machine-readable name for this shipping order type. It must only contain lowercase letters, numbers, and underscores."
+msgstr "Tên máy duy nhất của loại đơn vận chuyển này. Chỉ được dùng chữ thường, chữ số và dấu gạch dưới."
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "Save shipping order type"
+msgstr "Lưu loại đơn vận chuyển"
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "Delete shipping order type"
+msgstr "Xóa loại đơn vận chuyển"
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "Edit %label shipping order type"
+msgstr "Sửa loại đơn vận chuyển %label"
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "The shipping order type %label has been added."
+msgstr "Đã thêm loại đơn vận chuyển %label."
+
+#: src/Form/ShippingOrderTypeForm.php
+msgid "The shipping order type %label has been updated."
+msgstr "Đã cập nhật loại đơn vận chuyển %label."
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "The human-readable name of this shipping address type."
+msgstr "Tên hiển thị của loại địa chỉ vận chuyển này."
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "A unique machine-readable name for this shipping address type. It must only contain lowercase letters, numbers, and underscores."
+msgstr "Tên máy duy nhất của loại địa chỉ vận chuyển này. Chỉ được dùng chữ thường, chữ số và dấu gạch dưới."
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "Save shipping address type"
+msgstr "Lưu loại địa chỉ vận chuyển"
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "Delete shipping address type"
+msgstr "Xóa loại địa chỉ vận chuyển"
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "Edit %label shipping address type"
+msgstr "Sửa loại địa chỉ vận chuyển %label"
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "The shipping address type %label has been added."
+msgstr "Đã thêm loại địa chỉ vận chuyển %label."
+
+#: src/Form/ShippingAddressTypeForm.php
+msgid "The shipping address type %label has been updated."
+msgstr "Đã cập nhật loại địa chỉ vận chuyển %label."
+
+#: src/Form/ShippingOrderForm.php
+msgid "New shipping order %label has been created."
+msgstr "Đã tạo đơn vận chuyển %label."
+
+#: src/Form/ShippingOrderForm.php
+msgid "The shipping order %label has been updated."
+msgstr "Đã cập nhật đơn vận chuyển %label."
+
+#: src/Form/ShippingAddressForm.php
+msgid "New shipping address %label has been created."
+msgstr "Đã tạo địa chỉ vận chuyển %label."
+
+#: src/Form/ShippingAddressForm.php
+msgid "The shipping address %label has been updated."
+msgstr "Đã cập nhật địa chỉ vận chuyển %label."
+
+#: src/Form/ShippingTypeForm.php
+msgid "New shipping type %label has been created."
+msgstr "Đã tạo hãng vận chuyển %label."
+
+#: src/Form/ShippingTypeForm.php
+msgid "The shipping type %label has been updated."
+msgstr "Đã cập nhật hãng vận chuyển %label."
+
+#: src/Form/ShippingTypeSettingsForm.php
+msgid "Settings form for a shipping type entity type."
+msgstr "Biểu mẫu cấu hình cho loại thực thể hãng vận chuyển."
+
+#: src/Form/ShippingTypeSettingsForm.php
+msgid "The configuration has been updated."
+msgstr "Đã cập nhật cấu hình."
+
+# Menu, tác vụ và quyền.
+
+#: shipping_integration.info.yml
+msgid "Shipping integration"
+msgstr "Tích hợp vận chuyển"
+
+#: shipping_integration.links.menu.yml
+msgid "Manage and CRUD actions on Shipping order type."
+msgstr "Quản lý và thao tác trên loại đơn vận chuyển."
+
+#: shipping_integration.links.menu.yml
+msgid "Manage and CRUD actions on Shipping address type."
+msgstr "Quản lý và thao tác trên loại địa chỉ vận chuyển."
+
+#: shipping_integration.links.menu.yml
+msgid "List of shipping orders."
+msgstr "Danh sách đơn vận chuyển."
+
+#: shipping_integration.links.menu.yml
+msgid "List of shipping addresses."
+msgstr "Danh sách địa chỉ vận chuyển."
+
+#: shipping_integration.links.menu.yml
+msgid "List of shipping types."
+msgstr "Danh sách hãng vận chuyển."
+
+#: shipping_integration.links.action.yml
+msgid "Add shipping order"
+msgstr "Thêm đơn vận chuyển"
+
+#: shipping_integration.links.action.yml
+msgid "Add shipping order type"
+msgstr "Thêm loại đơn vận chuyển"
+
+#: shipping_integration.links.action.yml
+msgid "Add shipping address"
+msgstr "Thêm địa chỉ vận chuyển"
+
+#: shipping_integration.links.action.yml
+msgid "Add shipping address type"
+msgstr "Thêm loại địa chỉ vận chuyển"
+
+#: shipping_integration.links.action.yml
+msgid "Add shipping type"
+msgstr "Thêm hãng vận chuyển"
+
+#: shipping_integration.links.task.yml
+msgid "List"
+msgstr "Danh sách"
+
+#: shipping_integration.links.task.yml
+msgid "View"
+msgstr "Xem"
+
+#: shipping_integration.links.task.yml
+msgid "Delete"
+msgstr "Xóa"
+
+#: shipping_integration.links.task.yml
+msgid "Settings"
+msgstr "Cấu hình"
+
+#: shipping_integration.permissions.yml
+msgid "Administer shipping orders"
+msgstr "Quản trị đơn vận chuyển"
+
+#: shipping_integration.permissions.yml
+msgid "Administer shipping order types"
+msgstr "Quản trị loại đơn vận chuyển"
+
+#: shipping_integration.permissions.yml
+msgid "Administer shipping address types"
+msgstr "Quản trị loại địa chỉ vận chuyển"
+
+#: shipping_integration.permissions.yml
+msgid "Administer shipping types"
+msgstr "Quản trị hãng vận chuyển"
+
+#: shipping_integration.permissions.yml
+msgid "Access shipping order list"
+msgstr "Xem danh sách đơn vận chuyển"
+
+#: shipping_integration.permissions.yml
+msgid "Create, update, cancel and synchronize shipping orders with carriers."
+msgstr "Tạo, cập nhật, hủy và đồng bộ đơn vận chuyển với hãng."
+
+#: shipping_integration.permissions.yml
+msgid "View the shipping order list and detail pages."
+msgstr "Xem trang danh sách và chi tiết đơn vận chuyển."
+
+#: shipping_integration.permissions.yml
+msgid "Maintain the types of shipping order entity."
+msgstr "Quản lý các loại thực thể đơn vận chuyển."
+
+#: shipping_integration.permissions.yml
+msgid "Maintain the types of shipping address entity."
+msgstr "Quản lý các loại thực thể địa chỉ vận chuyển."
+
+#: shipping_integration.permissions.yml
+msgid "Maintain shipping carriers and their connection settings."
+msgstr "Quản lý hãng vận chuyển và cấu hình kết nối."
+
+#: shipping_integration.links.menu.yml
+msgid "Configure a Shipping type entity type."
+msgstr "Cấu hình loại thực thể hãng vận chuyển."
+
+# Form tạo và sửa đơn vận chuyển: các bên tham gia.
+
+#: src/Form/ShippingOrderForm.php
+msgid "Sender name"
+msgstr "Tên người gửi"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Receiver name"
+msgstr "Tên người nhận"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Phone number"
+msgstr "Số điện thoại"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Email"
+msgstr "Email"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Street address"
+msgstr "Địa chỉ chi tiết"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Province/City"
+msgstr "Tỉnh/Thành phố"
+
+#: src/Form/ShippingOrderForm.php
+msgid "District"
+msgstr "Quận/Huyện"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Ward/Commune"
+msgstr "Phường/Xã"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Customer code: @code"
+msgstr "Mã khách hàng: @code"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Contract: @contract"
+msgstr "Hợp đồng: @contract"
+
+#: src/Form/ShippingOrderForm.php
+msgid "none"
+msgstr "không có"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Payment method: pay now"
+msgstr "Hình thức thanh toán: thanh toán ngay"
+
+# Form tạo và sửa đơn vận chuyển: dịch vụ và hàng hoá.
+
+#: src/Form/ShippingOrderForm.php
+msgid "Service name"
+msgstr "Tên SPDV"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Vehicle"
+msgstr "Phương tiện"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Addon services"
+msgstr "Dịch vụ cộng thêm"
+
+#: src/Form/ShippingOrderForm.php
+msgid "COD amount"
+msgstr "Tiền thu hộ COD"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Parcel information"
+msgstr "Thông tin hàng hoá"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Total weight (gram)"
+msgstr "Tổng khối lượng (gram)"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Size (cm)"
+msgstr "Kích thước (cm)"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Length"
+msgstr "Dài"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Width"
+msgstr "Rộng"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Height"
+msgstr "Cao"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Converted weight (gram)"
+msgstr "Quy đổi (gram)"
+
+# Form tạo và sửa đơn vận chuyển: yêu cầu thêm.
+
+#: src/Form/ShippingOrderForm.php
+msgid "Additional requests"
+msgstr "Yêu cầu thêm"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Sending method"
+msgstr "Hình thức gửi hàng"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Delivery requirement"
+msgstr "Yêu cầu khi phát"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Preferred delivery time"
+msgstr "Thời gian phát hàng mong muốn"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Fragile goods"
+msgstr "Hàng dễ vỡ"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Delivery instruction"
+msgstr "Chỉ dẫn phát"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Please handle gently, fragile goods."
+msgstr "Hàng dễ vỡ, vui lòng nhẹ tay."
+
+#: src/Form/ShippingOrderForm.php
+msgid "Deliver during office hours."
+msgstr "Giao hàng giờ hành chính."
+
+#: src/Form/ShippingOrderForm.php
+msgid "Call the receiver before delivering."
+msgstr "Gọi cho người nhận trước khi giao."
+
+#: src/Form/ShippingOrderForm.php
+msgid "Partial delivery allowed, take back the rest."
+msgstr "Giao hàng một phần, nhận lại phần còn lại."
+
+#: src/Form/ShippingOrderForm.php
+msgid "Post office codes"
+msgstr "Mã bưu cục"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Collecting post office"
+msgstr "Bưu cục thu gom"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Accepting post office"
+msgstr "Bưu cục chấp nhận"
+
+# Form tạo và sửa đơn vận chuyển: thanh tổng hợp, nút lệnh và kiểm tra.
+
+#: src/Form/ShippingOrderForm.php
+msgid "Estimated total fee"
+msgstr "Tổng cước tạm tính"
+
+#: src/Form/ShippingOrderForm.php
+msgid "COD to collect"
+msgstr "Tổng tiền thu hộ"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Save"
+msgstr "Lưu"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Reset"
+msgstr "Làm mới"
+
+#: src/Form/ShippingOrderForm.php
+msgid "sender"
+msgstr "người gửi"
+
+#: src/Form/ShippingOrderForm.php
+msgid "receiver"
+msgstr "người nhận"
+
+#: src/Form/ShippingOrderForm.php
+msgid "Choose the province of the @party."
+msgstr "Chọn tỉnh/thành phố của @party."
+
+#: src/Form/ShippingOrderForm.php
+msgid "Choose the district of the @party."
+msgstr "Chọn quận/huyện của @party."
+
+#: src/Form/ShippingOrderForm.php
+msgid "Choose the ward of the @party."
+msgstr "Chọn phường/xã của @party."
+
+#: src/Form/ShippingOrderForm.php
+msgid "The total weight must be greater than 0 gram."
+msgstr "Tổng khối lượng phải lớn hơn 0 gram."
+
+# Bảng cước các dịch vụ.
+
+#: src/Form/ShippingOrderForm.php
+msgid "View fees of all services"
+msgstr "Xem cước các dịch vụ"
+
+#: src/Form/ShippingOrderForm.php
+msgid "The carrier did not quote any service."
+msgstr "Hãng không trả về cước của dịch vụ nào."
+
+# Nút khai đơn mới trên trang danh sách.
+
+#: templates/list-shipping-order.html.twig
+msgid "Add order"
+msgstr "Thêm đơn"

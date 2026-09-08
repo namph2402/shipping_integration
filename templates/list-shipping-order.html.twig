@@ -17,13 +17,13 @@
 				<input type="date" name="start_date" class="form-control w-auto" value="{{ filter.date.start }}"/>
 				<input type="date" name="end_date" class="form-control w-auto" value="{{ filter.date.end }}"/>
 				<select name="config_id" class="form-control w-auto">
-					<option value="">{{ "All connections"|t }}</option>
+					<option value="">{{- "All connections"|t -}}</option>
 					{% for config_id, config_name in filter.option_config %}
 						<option value="{{ config_id }}" {% if filter.config_id == config_id %} selected {% endif %}>{{ config_name }}</option>
 					{% endfor %}
 				</select>
 				<select name="status" class="form-control w-auto">
-					<option value="">{{ "All statuses"|t }}</option>
+					<option value="">{{- "All statuses"|t -}}</option>
 					{% for status_value, status_label in filter.option_status %}
 						<option value="{{ status_value }}" {% if filter.status == status_value %} selected {% endif %}>{{ status_label }}</option>
 					{% endfor %}
@@ -40,60 +40,55 @@
 			</div>
 		</div>
 
-		{# Mỗi nút gửi POST kèm danh sách id đang tích chọn trong bảng. #}
-		<div class="d-flex flex-wrap gap-1 shipping-actions">
-			<button type="button" class="btn btn-success text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_create") }}" data-draft="0"
-				data-confirm="{{ "Push the selected orders to the carrier?"|t }}">
-				<i class="bi bi-send me-1"></i>{{ "Create order"|t }}
+		{# Gom mọi lệnh hàng loạt vào một ô chọn cho gọn, bấm "Thao tác" mới chạy. #}
+		<div class="d-flex flex-wrap align-items-center gap-1 shipping-actions">
+			<select class="form-select w-auto shipping-action-select" aria-label="{{ "Action"|t }}">
+				<option value="">{{- "- Choose an action -"|t -}}</option>
+				<optgroup label="{{ "Send to carrier"|t }}">
+					<option value="create"
+						data-action="{{ path("shipping_integration.order_create") }}" data-draft="0"
+						data-confirm="{{ "Push the selected orders to the carrier?"|t }}">{{- "Create order"|t -}}</option>
+					<option value="save_draft"
+						data-action="{{ path("shipping_integration.order_create") }}" data-draft="1"
+						data-confirm="{{ "Save the selected orders as drafts on the carrier system?"|t }}">{{- "Save draft"|t -}}</option>
+					<option value="confirm_draft"
+						data-action="{{ path("shipping_integration.order_confirm_draft") }}"
+						data-confirm="{{ "Publish the selected drafts to the carrier? The orders can no longer be edited freely afterwards."|t }}">{{- "Publish draft"|t -}}</option>
+					<option value="update"
+						data-action="{{ path("shipping_integration.order_update") }}"
+						data-confirm="{{ "Send a correction request for the selected orders?"|t }}">{{- "Correct order"|t -}}</option>
+					<option value="cancel"
+						data-action="{{ path("shipping_integration.order_cancel") }}"
+						data-confirm="{{ "Cancel the selected orders?"|t }}">{{- "Cancel order"|t -}}</option>
+				</optgroup>
+				<optgroup label="{{ "Get from carrier"|t }}">
+					<option value="approval" data-action="{{ path("shipping_integration.order_approval") }}">{{- "Approval result"|t -}}</option>
+					<option value="synchronize" data-action="{{ path("shipping_integration.order_synchronize") }}">{{- "Synchronize"|t -}}</option>
+					<option value="fee" data-action="{{ path("shipping_integration.order_fee") }}">{{- "Calculate fee"|t -}}</option>
+					<option value="label" data-action="{{ path("shipping_integration.order_label") }}">{{- "Print waybill"|t -}}</option>
+					<option value="pull" data-type="modal" data-target="#pullShippingOrderModal">{{- "Pull orders"|t -}}</option>
+				</optgroup>
+			</select>
+			<button type="button" class="btn btn-primary text-nowrap btn-shipping-action-run">
+				<i class="bi bi-lightning-charge me-1"></i>{{ "Apply action"|t }}
 			</button>
-			<button type="button" class="btn btn-outline-success text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_create") }}" data-draft="1"
-				data-confirm="{{ "Save the selected orders as drafts on the carrier system?"|t }}">
-				<i class="bi bi-file-earmark me-1"></i>{{ "Save draft"|t }}
-			</button>
-			<button type="button" class="btn btn-primary text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_confirm_draft") }}"
-				data-confirm="{{ "Publish the selected drafts to the carrier? The orders can no longer be edited freely afterwards."|t }}">
-				<i class="bi bi-send-check me-1"></i>{{ "Publish draft"|t }}
-			</button>
-			<button type="button" class="btn btn-warning text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_update") }}"
-				data-confirm="{{ "Send a correction request for the selected orders?"|t }}">
-				<i class="bi bi-pencil-square me-1"></i>{{ "Correct order"|t }}
-			</button>
-			<button type="button" class="btn btn-danger text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_cancel") }}"
-				data-confirm="{{ "Cancel the selected orders?"|t }}">
-				<i class="bi bi-x-circle me-1"></i>{{ "Cancel order"|t }}
-			</button>
-			<button type="button" class="btn btn-outline-secondary text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_approval") }}">
-				<i class="bi bi-check2-square me-1"></i>{{ "Approval result"|t }}
-			</button>
-			<button type="button" class="btn btn-outline-primary text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_synchronize") }}">
-				<i class="bi bi-arrow-repeat me-1"></i>{{ "Synchronize"|t }}
-			</button>
-			<button type="button" class="btn btn-outline-primary text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_fee") }}">
-				<i class="bi bi-cash-coin me-1"></i>{{ "Calculate fee"|t }}
-			</button>
-			<button type="button" class="btn btn-outline-dark text-nowrap btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_label") }}">
-				<i class="bi bi-printer me-1"></i>{{ "Print waybill"|t }}
-			</button>
-			<button type="button" class="btn btn-info text-nowrap" data-bs-toggle="modal" data-bs-target="#pullShippingOrderModal">
-				<i class="bi bi-cloud-download me-1"></i>{{ "Pull orders"|t }}
-			</button>
+			<span class="small text-muted text-nowrap shipping-selected-count"></span>
+			{# Khai đơn mới: mở thẳng form, xong quay lại đúng trang danh sách này. #}
+			<a class="btn btn-success text-nowrap ms-auto"
+				href="{{ path("entity.shipping_order.add_form", {"shipping_order_type": filter.bundle}, {"query": {"destination": filter.destination}}) }}">
+				<i class="bi bi-plus-lg me-1"></i>{{ "Add order"|t }}
+			</a>
 		</div>
 
-		{# Form ẩn dùng chung cho mọi nút thao tác ở trên. #}
+		{# Form ẩn dùng chung cho mọi lệnh ở ô chọn trên. #}
 		<form method="POST" class="shipping-action-form d-none">
 			<input type="hidden" name="order_ids" value=""/>
 			<input type="hidden" name="draft" value="0"/>
 			<input type="hidden" name="destination" value="{{ filter.destination }}"/>
 		</form>
+
+		{# Nút ẩn để mở hộp thoại theo lựa chọn, dùng lại data-api của Bootstrap. #}
+		<button type="button" class="d-none shipping-modal-trigger" data-bs-toggle="modal" data-bs-target=""></button>
 	</div>
 
 	<div class="flex-grow-1 min-h-0 min-w-0 p-2 bg-white">
@@ -105,7 +100,7 @@
 						{% for page_size in filter.option_page_size %}
 							<option value="{{ page_size }}" {% if filter.page_size == page_size %} selected {% endif %}>{{ page_size }}</option>
 						{% endfor %}
-						<option value="0" {% if filter.page_size == 0 %} selected {% endif %}>{{ "All"|t }}</option>
+						<option value="0" {% if filter.page_size == 0 %} selected {% endif %}>{{- "All"|t -}}</option>
 					</select>
 					<span class="small text-muted text-nowrap shipping-range"></span>
 				</div>

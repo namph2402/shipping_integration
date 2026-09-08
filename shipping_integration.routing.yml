@@ -7,7 +7,7 @@ entity.shipping_type.settings:
     _permission: 'administer shipping_type'
 
 shipping_integration.order_list:
-  path: '/admin/shipping/orders'
+  path: 'shipping/orders'
   defaults:
     _title: 'Danh sách đơn vận chuyển'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::listOrders'
@@ -15,7 +15,7 @@ shipping_integration.order_list:
     _permission: 'access shipping order'
 
 shipping_integration.order_detail:
-  path: '/admin/shipping/order/{shipping_order}'
+  path: 'shipping/order/{shipping_order}'
   defaults:
     _title: 'Chi tiết đơn vận chuyển'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::detail'
@@ -27,7 +27,7 @@ shipping_integration.order_detail:
         type: 'entity:shipping_order'
 
 shipping_integration.order_create:
-  path: '/admin/shipping/order/action/create'
+  path: 'shipping/order/action/create'
   defaults:
     _title: 'Tạo đơn vận chuyển'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::createOrders'
@@ -37,7 +37,7 @@ shipping_integration.order_create:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_confirm_draft:
-  path: '/admin/shipping/order/action/confirm-draft'
+  path: 'shipping/order/action/confirm-draft'
   defaults:
     _title: 'Phát hành đơn nháp'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::confirmDrafts'
@@ -47,7 +47,7 @@ shipping_integration.order_confirm_draft:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_update:
-  path: '/admin/shipping/order/action/update'
+  path: 'shipping/order/action/update'
   defaults:
     _title: 'Hiệu chỉnh đơn vận chuyển'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::updateOrders'
@@ -57,7 +57,7 @@ shipping_integration.order_update:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_cancel:
-  path: '/admin/shipping/order/action/cancel'
+  path: 'shipping/order/action/cancel'
   defaults:
     _title: 'Hủy đơn vận chuyển'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::cancelOrders'
@@ -67,7 +67,7 @@ shipping_integration.order_cancel:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_approval:
-  path: '/admin/shipping/order/action/approval'
+  path: 'shipping/order/action/approval'
   defaults:
     _title: 'Kết quả phê duyệt'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::approvalOrders'
@@ -77,7 +77,7 @@ shipping_integration.order_approval:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_synchronize:
-  path: '/admin/shipping/order/action/synchronize'
+  path: 'shipping/order/action/synchronize'
   defaults:
     _title: 'Đồng bộ đơn vận chuyển'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::synchronizeOrders'
@@ -87,7 +87,7 @@ shipping_integration.order_synchronize:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_fee:
-  path: '/admin/shipping/order/action/fee'
+  path: 'shipping/order/action/fee'
   defaults:
     _title: 'Tính cước phí'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::calculateFees'
@@ -97,7 +97,7 @@ shipping_integration.order_fee:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_label:
-  path: '/admin/shipping/order/action/label'
+  path: 'shipping/order/action/label'
   defaults:
     _title: 'In vận đơn'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::printLabels'
@@ -107,7 +107,7 @@ shipping_integration.order_label:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_pull:
-  path: '/admin/shipping/order/action/pull'
+  path: 'shipping/order/action/pull'
   defaults:
     _title: 'Kéo đơn hàng về'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::pullOrders'
@@ -117,7 +117,7 @@ shipping_integration.order_pull:
     _csrf_token: 'TRUE'
 
 shipping_integration.order_history:
-  path: '/admin/shipping/order/{shipping_order}/history'
+  path: 'shipping/order/{shipping_order}/history'
   defaults:
     _title: 'Hành trình đơn hàng'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::history'
@@ -129,7 +129,7 @@ shipping_integration.order_history:
         type: 'entity:shipping_order'
 
 shipping_integration.order_preview_fee:
-  path: '/admin/shipping/order/{shipping_order}/preview-fee'
+  path: 'shipping/order/{shipping_order}/preview-fee'
   defaults:
     _title: 'Tính thử cước phí'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::previewFee'
@@ -141,7 +141,7 @@ shipping_integration.order_preview_fee:
         type: 'entity:shipping_order'
 
 shipping_integration.order_download_label:
-  path: '/admin/shipping/order/{shipping_order}/label'
+  path: 'shipping/order/{shipping_order}/label'
   defaults:
     _title: 'Tải vận đơn'
     _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::downloadLabel'
@@ -154,7 +154,7 @@ shipping_integration.order_download_label:
 
 # Cấu hình kết nối.
 shipping_integration.synchronize_addresses:
-  path: '/admin/shipping/config/{taxonomy_term}/synchronize-addresses'
+  path: 'shipping/config/{taxonomy_term}/synchronize-addresses'
   defaults:
     _title: 'Đồng bộ danh mục địa chỉ'
     _form: '\Drupal\shipping_integration\Form\SynchronizeAddressesForm'
@@ -166,7 +166,7 @@ shipping_integration.synchronize_addresses:
         type: 'entity:taxonomy_term'
 
 shipping_integration.refresh_token:
-  path: '/admin/shipping/config/{taxonomy_term}/refresh-token'
+  path: 'shipping/config/{taxonomy_term}/refresh-token'
   defaults:
     _title: 'Lấy lại token'
     _controller: '\Drupal\shipping_integration\Controller\ShippingController::refreshToken'

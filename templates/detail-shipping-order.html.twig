@@ -18,53 +18,46 @@
 				<span class="badge bg-primary align-middle">{{ data.status_label }}</span>
 			{% endif %}
 		</h4>
-		<div class="d-flex flex-wrap gap-1 shipping-actions">
-			<button type="button" class="btn btn-sm btn-success btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_create") }}" data-draft="0"
-				data-ids="{{ data.id }}"
-				data-confirm="{{ "Push this order to the carrier?"|t }}">
-				{{ "Create order"|t }}
+		{# Gom mọi lệnh của đơn vào một ô chọn cho gọn, bấm "Thao tác" mới chạy. #}
+		<div class="d-flex flex-wrap align-items-center gap-1 shipping-actions">
+			<select class="form-select form-select-sm w-auto shipping-action-select" aria-label="{{ "Action"|t }}">
+				<option value="">{{- "- Choose an action -"|t -}}</option>
+				<optgroup label="{{ "Send to carrier"|t }}">
+					<option value="create"
+						data-action="{{ path("shipping_integration.order_create") }}" data-draft="0" data-ids="{{ data.id }}"
+						data-confirm="{{ "Push this order to the carrier?"|t }}">{{- "Create order"|t -}}</option>
+					{# Chỉ đơn còn nháp trên hệ thống hãng mới phát hành được. #}
+					{% if data.status == "0" %}
+						<option value="confirm_draft"
+							data-action="{{ path("shipping_integration.order_confirm_draft") }}" data-ids="{{ data.id }}"
+							data-confirm="{{ "Publish this draft to the carrier? The order can no longer be edited freely afterwards."|t }}">{{- "Publish draft"|t -}}</option>
+					{% endif %}
+					<option value="update"
+						data-action="{{ path("shipping_integration.order_update") }}" data-ids="{{ data.id }}"
+						data-confirm="{{ "Send a correction request for this order?"|t }}">{{- "Correct order"|t -}}</option>
+					<option value="cancel"
+						data-action="{{ path("shipping_integration.order_cancel") }}" data-ids="{{ data.id }}"
+						data-confirm="{{ "Cancel this order?"|t }}">{{- "Cancel order"|t -}}</option>
+				</optgroup>
+				<optgroup label="{{ "Get from carrier"|t }}">
+					<option value="synchronize"
+						data-action="{{ path("shipping_integration.order_synchronize") }}" data-ids="{{ data.id }}">{{- "Synchronize"|t -}}</option>
+					<option value="fee"
+						data-action="{{ path("shipping_integration.order_fee") }}" data-ids="{{ data.id }}">{{- "Calculate fee"|t -}}</option>
+				</optgroup>
+				<optgroup label="{{ "Other"|t }}">
+					<option value="history" data-type="history"
+						data-url="{{ path("shipping_integration.order_history", {"shipping_order": data.id}) }}"
+						data-item-code="{{ data.item_code }}">{{- "Tracking history"|t -}}</option>
+					<option value="waybill" data-type="link" data-blank="1"
+						data-href="{{ data.label_file ?: path("shipping_integration.order_download_label", {"shipping_order": data.id}) }}">{{- "Waybill"|t -}}</option>
+					<option value="edit" data-type="link"
+						data-href="{{ path("entity.shipping_order.edit_form", {"shipping_order": data.id}, {"query": {"destination": filter.destination}}) }}">{{- "Edit"|t -}}</option>
+				</optgroup>
+			</select>
+			<button type="button" class="btn btn-sm btn-primary text-nowrap btn-shipping-action-run">
+				<i class="bi bi-lightning-charge me-1"></i>{{ "Apply action"|t }}
 			</button>
-			{# Chỉ đơn còn nháp trên hệ thống hãng mới phát hành được. #}
-			{% if data.status == "0" %}
-				<button type="button" class="btn btn-sm btn-primary btn-shipping-action"
-					data-action="{{ path("shipping_integration.order_confirm_draft") }}" data-ids="{{ data.id }}"
-					data-confirm="{{ "Publish this draft to the carrier? The order can no longer be edited freely afterwards."|t }}">
-					{{ "Publish draft"|t }}
-				</button>
-			{% endif %}
-			<button type="button" class="btn btn-sm btn-outline-primary btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_synchronize") }}" data-ids="{{ data.id }}">
-				{{ "Synchronize"|t }}
-			</button>
-			<button type="button" class="btn btn-sm btn-outline-primary btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_fee") }}" data-ids="{{ data.id }}">
-				{{ "Calculate fee"|t }}
-			</button>
-			<button type="button" class="btn btn-sm btn-warning btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_update") }}" data-ids="{{ data.id }}"
-				data-confirm="{{ "Send a correction request for this order?"|t }}">
-				{{ "Correct order"|t }}
-			</button>
-			<button type="button" class="btn btn-sm btn-danger btn-shipping-action"
-				data-action="{{ path("shipping_integration.order_cancel") }}" data-ids="{{ data.id }}"
-				data-confirm="{{ "Cancel this order?"|t }}">
-				{{ "Cancel order"|t }}
-			</button>
-			<button type="button" class="btn btn-sm btn-outline-secondary btn-shipping-history"
-				data-bs-toggle="modal" data-bs-target="#historyShippingOrderModal"
-				data-url="{{ path("shipping_integration.order_history", {"shipping_order": data.id}) }}"
-				data-item-code="{{ data.item_code }}">
-				{{ "Tracking history"|t }}
-			</button>
-			<a class="btn btn-sm btn-outline-dark" target="_blank"
-				href="{{ data.label_file ?: path("shipping_integration.order_download_label", {"shipping_order": data.id}) }}">
-				{{ "Waybill"|t }}
-			</a>
-			<a class="btn btn-sm btn-outline-secondary"
-				href="{{ path("entity.shipping_order.edit_form", {"shipping_order": data.id}, {"query": {"destination": filter.destination}}) }}">
-				{{ "Edit"|t }}
-			</a>
 		</div>
 	</div>
 
@@ -73,6 +66,9 @@
 		<input type="hidden" name="draft" value="0"/>
 		<input type="hidden" name="destination" value="{{ filter.destination }}"/>
 	</form>
+
+	{# Nút ẩn để mở hộp thoại theo lựa chọn, dùng lại data-api của Bootstrap. #}
+	<button type="button" class="d-none shipping-modal-trigger" data-bs-toggle="modal" data-bs-target=""></button>
 
 	<div class="row g-3">
 		<div class="col-12 col-lg-6">
