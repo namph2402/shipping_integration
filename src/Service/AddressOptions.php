@@ -20,7 +20,7 @@ final class AddressOptions {
   /**
    * Khởi tạo service.
    *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   * @param EntityTypeManagerInterface $entityTypeManager
    *   Trình quản lý entity.
    */
   public function __construct(
@@ -99,6 +99,7 @@ final class AddressOptions {
       return NULL;
     }
 
+    /** @var \Drupal\shipping_integration\ShippingAddressInterface $address */
     $address = $this->entityTypeManager->getStorage("shipping_address")->load($id);
 
     if ($address === NULL || !$address->hasField("field_is_new_address")) {

@@ -237,8 +237,6 @@ class GetConfigShipping {
 
     $expiration = strtotime((string) ($config["shipping_expiration"] ?? ""));
 
-    // Không có mốc hết hạn nghĩa là token cũ chưa ghi nhận thời hạn, lấy lại
-    // cho chắc thay vì dùng mãi.
     return $expiration === FALSE || $expiration < $this->time->getRequestTime();
   }
 
@@ -249,7 +247,6 @@ class GetConfigShipping {
    *   Term cấu hình vừa được gán token mới.
    */
   private function saveConfigEntity(TermInterface $config_entity): void {
-    // Cờ này để shipping_integration_entity_presave() không gọi lại getToken().
     $config_entity->skip_call_token = TRUE;
 
     try {

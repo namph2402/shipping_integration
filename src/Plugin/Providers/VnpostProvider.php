@@ -282,10 +282,14 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
    * Kết quả hiệu chỉnh
    */
   public function approvalResult(array $config, string $original_id, string $case_id): array {
-    $response = $this->request($config, "/orderCorrection/updateCase", [], NULL, "GET", TRUE, 30, [
-      "OriginalId" => $original_id,
-      "CaseId" => $case_id,
-    ]);
+    // Hãng khai endpoint này là GET nhưng đọc tham số từ body dạng mảng
+    // OrderOriginalListDto, truyền qua query sẽ bị trả về lỗi thiếu request body.
+    $response = $this->request($config, "/orderCorrection/updateCase", [], [
+      [
+        "OriginalId" => $original_id,
+        "CaseId" => $case_id,
+      ],
+    ], "GET", TRUE, 30);
 
     $rows = is_array($response) && array_is_list($response) ? $response : [$response];
 
@@ -784,6 +788,19 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   private function caseResult(mixed $response): array {
     if (!is_array($response)) {
       throw new \DomainException("VN-Post không phản hồi kết quả xử lý");
+    }
+
+    // /orderCancel và /orderCorrection gói kết quả trong một mảng một phần tử,
+    // còn /orderCorrection/updateCase trả thẳng từng phần tử, nên bóc vỏ mảng
+    // trước khi đọc để cả hai dạng cùng ra một kết quả.
+    if (array_is_list($response)) {
+      $first = reset($response);
+
+      if (!is_array($first)) {
+        throw new \DomainException("VN-Post không phản hồi kết quả xử lý");
+      }
+
+      $response = $first;
     }
 
     $type = (string) ($response["Type"] ?? $response["type"] ?? "");

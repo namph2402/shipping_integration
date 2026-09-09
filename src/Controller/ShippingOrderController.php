@@ -270,6 +270,8 @@ final class ShippingOrderController extends ControllerBase {
     );
 
     $config_id = (string) $request->request->get("config_id");
+
+    /** @var \Drupal\taxonomy\TermInterface $config_entity */
     $config_entity = $config_id === ""
       ? NULL
       : $this->entityTypeManager()->getStorage("taxonomy_term")->load($config_id);
@@ -388,8 +390,9 @@ final class ShippingOrderController extends ControllerBase {
       }
     }
 
+    /** @var \Drupal\file\Entity\File $file */
     $file = $shipping_order->get("field_so_label")->entity;
-
+  
     if ($file === NULL) {
       throw new NotFoundHttpException();
     }

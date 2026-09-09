@@ -62,8 +62,6 @@ class SynchronizeAddresses {
         $data = $provider->synchronizeAddresses($config);
       }
       catch (ShippingTokenException) {
-        // Token hết hạn sớm hơn mốc lưu trong term, xin bộ mới rồi gọi lại
-        // đúng một lần.
         $config = $this->getConfig->refresh($config) ?? $config;
         $data = $provider->synchronizeAddresses($config);
       }
@@ -103,6 +101,9 @@ class SynchronizeAddresses {
    *
    * @return array
    *   Kết quả gồm success, created và total.
+   * 
+   * Cha của bản ghi luôn được đồng bộ trước trong cùng lượt chạy nên tra
+   * trong $existing là đủ, không cần truy vấn lại.
    */
   private function saveAddresses(array $addresses, string|int $type_id): array {
     $storage = $this->entityTypeManager->getStorage("shipping_address");
@@ -124,8 +125,6 @@ class SynchronizeAddresses {
         "field_is_new_address" => $address["is_new"],
       ];
 
-      // Cha của bản ghi luôn được đồng bộ trước trong cùng lượt chạy nên tra
-      // trong $existing là đủ, không cần truy vấn lại.
       if ($address["bundle"] !== "province" && !empty($address["province_code"])) {
         $province_key = $this->addressKey("province", $address["is_new"], $address["province_code"]);
         $values["field_province"] = $existing[$province_key] ?? NULL;

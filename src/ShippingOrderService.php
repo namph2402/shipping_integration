@@ -329,6 +329,7 @@ class ShippingOrderService {
       return NULL;
     }
 
+    /** @var \Drupal\file\Entity\File $file */
     $file = $order->get("field_so_label")->entity;
 
     return $file === NULL ? NULL : $file->createFileUrl(FALSE);

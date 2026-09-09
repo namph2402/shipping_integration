@@ -50,7 +50,7 @@ class HandleShipping {
   /**
    * Lấy token cho một term cấu hình.
    *
-   * @param \Drupal\taxonomy\TermInterface $config_entity
+   * @param TermInterface $config_entity
    *   Term cấu hình kết nối.
    *
    * @return array|null
@@ -63,7 +63,7 @@ class HandleShipping {
   /**
    * Đẩy một đơn hàng sang hãng vận chuyển.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần tạo.
    * @param bool $draft
    *   TRUE thì chỉ lưu nháp trên hệ thống hãng.
@@ -95,7 +95,7 @@ class HandleShipping {
    * lệnh này mới là lúc bưu gửi thực sự được nhận. Hãng trả về bản ghi đơn
    * đầy đủ nên ghi đè lại toàn bộ như khi tạo mới.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn nháp cần phát hành.
    *
    * @return array
@@ -125,7 +125,7 @@ class HandleShipping {
   /**
    * Hiệu chỉnh một đơn hàng đã tạo trên hệ thống hãng.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần hiệu chỉnh.
    *
    * @return array
@@ -148,18 +148,22 @@ class HandleShipping {
   /**
    * Hủy một đơn hàng.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần hủy.
    *
    * @return array
    *   Kết quả gồm success và message.
+   *
+   * Đơn còn ở trạng thái nháp chưa có ID gốc thì xóa nháp thay vì hủy.
    */
   public function cancelOrder(ShippingOrderInterface $order): array {
     return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $original_id = $this->fieldValue($order, "field_so_original_id");
 
-      // Đơn còn ở trạng thái nháp chưa có ID gốc thì xóa nháp thay vì hủy.
-      if ($original_id === "" && (int) $this->fieldValue($order, "field_so_status") === self::STATUS_DRAFT) {
+      // Đơn nháp phải xóa nháp chứ không hủy: /orderCancel từ chối đơn chưa
+      // phát hành. Hãng vẫn cấp originalID cho bản nháp nên chỉ được nhìn
+      // trạng thái để phân nhánh, không nhìn originalID.
+      if ((int) $this->fieldValue($order, "field_so_status") === self::STATUS_DRAFT) {
         $result = $provider->deleteDraft($config, $this->lookupCode($order), $this->lookupType($order));
 
         return [
@@ -183,7 +187,7 @@ class HandleShipping {
   /**
    * Lấy kết quả phê duyệt hiệu chỉnh hoặc hủy đơn.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng đang chờ phê duyệt.
    *
    * @return array
@@ -224,7 +228,7 @@ class HandleShipping {
   /**
    * Tính cước phí cho một đơn hàng.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần tính cước.
    * @param bool $save
    *   TRUE thì ghi bảng cước vào entity.
@@ -255,7 +259,7 @@ class HandleShipping {
   /**
    * Đồng bộ trạng thái và cước phí của một đơn hàng từ hệ thống hãng.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần đồng bộ.
    *
    * @return array
@@ -286,7 +290,7 @@ class HandleShipping {
   /**
    * Lấy hành trình của một đơn hàng và lưu lại trên entity.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần tra hành trình.
    *
    * @return array
@@ -310,7 +314,7 @@ class HandleShipping {
   /**
    * Tải vận đơn của một đơn hàng và gắn vào entity.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần in vận đơn.
    *
    * @return array
@@ -349,7 +353,7 @@ class HandleShipping {
    * Đơn đã có trong hệ thống được cập nhật theo số hiệu bưu gửi, đơn chưa có
    * thì tạo mới, nên chạy lại nhiều lần vẫn an toàn.
    *
-   * @param \Drupal\taxonomy\TermInterface $config_entity
+   * @param TermInterface $config_entity
    *   Term cấu hình kết nối.
    * @param array $params
    *   Tham số lọc: from, to (Y-m-d), type (GUI|NHAN).
@@ -487,7 +491,7 @@ class HandleShipping {
    * mô tả chúng bằng bộ mã khác (TGTN, GHTBC) so với danh sách giá trị hợp lệ
    * của field, ghi vào sẽ làm hỏng dữ liệu đang có.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần cập nhật.
    * @param array $record
    *   Bản ghi trong gói tin webhook.
@@ -518,7 +522,7 @@ class HandleShipping {
   /**
    * Chạy một lệnh trên đơn hàng, bọc sẵn xử lý lỗi và làm mới token.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng đang thao tác.
    * @param callable $operation
    *   Hàm nhận (provider, config) và trả về mảng kết quả.
@@ -543,8 +547,6 @@ class HandleShipping {
         return $operation($provider, $config);
       }
       catch (ShippingTokenException) {
-        // Hãng từ chối token sớm hơn mốc lưu trong term, xin bộ mới rồi thử
-        // lại đúng một lần để không lặp vô hạn khi tài khoản sai.
         $config = $this->getConfig->refresh($config) ?? $config;
         return $operation($provider, $config);
       }
@@ -568,7 +570,7 @@ class HandleShipping {
    * @param array $config
    *   Cấu hình kết nối.
    *
-   * @return \Drupal\shipping_integration\ShippingProvidersInterface
+   * @return ShippingProvidersInterface
    *   Plugin tương ứng.
    */
   private function provider(array $config): ShippingProvidersInterface {
@@ -582,7 +584,7 @@ class HandleShipping {
       throw new \DomainException("The shipping provider {$provider_id} does not exist");
     }
 
-    /** @var \Drupal\shipping_integration\ShippingProvidersInterface $provider */
+    /** @var ShippingProvidersInterface $provider */
     $provider = $this->providers->createInstance($provider_id);
 
     return $provider;
@@ -591,7 +593,7 @@ class HandleShipping {
   /**
    * Đọc entity đơn hàng ra mảng chuẩn hoá cho plugin.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần đọc.
    *
    * @return array
@@ -628,7 +630,7 @@ class HandleShipping {
   /**
    * Đọc thông tin một bên gửi hoặc nhận của đơn hàng.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần đọc.
    * @param string $party
    *   "sender" hoặc "receiver".
@@ -654,7 +656,7 @@ class HandleShipping {
   /**
    * Ghi bản ghi đơn hàng của hãng ngược lại entity.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần cập nhật.
    * @param array $record
    *   Bản ghi hãng trả về.
@@ -709,7 +711,7 @@ class HandleShipping {
   /**
    * Ghi kết quả hiệu chỉnh hoặc hủy vào entity.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần cập nhật.
    * @param array $result
    *   Kết quả do plugin chuẩn hoá.
@@ -730,14 +732,15 @@ class HandleShipping {
    *
    * @return \Drupal\file\FileInterface|null
    *   File đã lưu, hoặc NULL khi không lưu được.
+   * 
+   * prepareDirectory() nhận tham số theo tham chiếu nên phải truyền biến thật,
+   * không truyền thẳng biểu thức gán.
    */
   private function saveLabel(string $item_code, string|false $binary): ?object {
     if (empty($binary)) {
       return NULL;
     }
 
-    // prepareDirectory() nhận tham số theo tham chiếu nên phải truyền biến thật,
-    // không truyền thẳng biểu thức gán.
     $directory = static::LABEL_DIRECTORY;
 
     if (!$this->fileSystem->prepareDirectory(
@@ -773,6 +776,9 @@ class HandleShipping {
    *
    * @return string
    *   Machine name của bundle.
+   * 
+   * Quy ước: mỗi hãng một bundle trùng tên plugin. Hãng nào chưa có bundle
+   * riêng thì rơi về bundle đầu tiên để đơn vẫn được lưu lại.
    */
   private function bundleFor(array $config): string {
     $provider_id = (string) ($config["shipping_provider"] ?? "");
@@ -782,15 +788,13 @@ class HandleShipping {
       ->accessCheck(FALSE)
       ->execute();
 
-    // Quy ước: mỗi hãng một bundle trùng tên plugin. Hãng nào chưa có bundle
-    // riêng thì rơi về bundle đầu tiên để đơn vẫn được lưu lại.
     return isset($bundles[$provider_id]) ? $provider_id : (string) reset($bundles);
   }
 
   /**
    * Giá trị tra cứu đơn hàng ưu tiên số hiệu bưu gửi.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần tra cứu.
    *
    * @return string
@@ -811,7 +815,7 @@ class HandleShipping {
   /**
    * Kiểu tra cứu tương ứng với giá trị ::lookupCode() chọn được.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần tra cứu.
    *
    * @return string
@@ -828,7 +832,7 @@ class HandleShipping {
   /**
    * Đọc mã của một địa chỉ được đơn hàng trỏ tới.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần đọc.
    * @param string $field
    *   Tên field tham chiếu địa chỉ.
@@ -849,7 +853,7 @@ class HandleShipping {
   /**
    * Đọc tên của một địa chỉ được đơn hàng trỏ tới.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần đọc.
    * @param string $field
    *   Tên field tham chiếu địa chỉ.
@@ -866,7 +870,7 @@ class HandleShipping {
   /**
    * Đọc giá trị đơn trị của một field.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần đọc.
    * @param string $field
    *   Tên field.
@@ -885,7 +889,7 @@ class HandleShipping {
   /**
    * Gán giá trị cho field nếu bundle có field đó và giá trị không rỗng.
    *
-   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   * @param ShippingOrderInterface $order
    *   Đơn hàng cần cập nhật.
    * @param string $field
    *   Tên field.
