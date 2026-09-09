@@ -116,7 +116,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Lấy token.
    */
   public function getToken(array $config): array {
     $response = $this->request($config, "/GetAccessToken", [], [
@@ -148,17 +148,12 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Dồng bộ địa chỉ.
    */
   public function synchronizeAddresses(array $config): array {
     $data = [];
-
-    // Mã huyện cũ ánh xạ sang mã tỉnh cũ. Endpoint /getAllCommune chỉ trả về
-    // mã huyện nên không có bảng này thì xã cũ mất liên kết tới tỉnh.
     $district_provinces = [];
 
-    // Thứ tự tỉnh trước, huyện sau, xã cuối để phía lưu trữ tra được cha của
-    // từng bản ghi ngay trong cùng một lượt chạy.
     foreach ($this->request($config, "/getAllProvince", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
       $data[] = [
         "bundle" => "province",
@@ -209,8 +204,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       ];
     }
 
-    // Danh mục hai cấp không còn quận/huyện: cha của xã là tỉnh, nhưng
-    // MyVNPost vẫn đặt mã tỉnh dưới khoá "districtCode" của bản ghi cũ.
     foreach ($this->request($config, "/getNewCommuneAll", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
       $data[] = [
         "bundle" => "commune",
@@ -231,7 +224,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Tạo đơn hàng.
    */
   public function createOrder(array $config, array $order): array {
     $payload = [
@@ -248,7 +241,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Hiệu chỉnh đơn hàng.
    */
   public function updateOrder(array $config, array $order): array {
     $original_id = (string) ($order["original_id"] ?? "");
@@ -271,7 +264,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * HỦy đơn hàng.
    */
   public function cancelOrder(array $config, string $original_id): array {
     if ($original_id === "") {
@@ -286,7 +279,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Kết quả hiệu chỉnh
    */
   public function approvalResult(array $config, string $original_id, string $case_id): array {
     $response = $this->request($config, "/orderCorrection/updateCase", [], NULL, "GET", TRUE, 30, [
@@ -294,7 +287,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "CaseId" => $case_id,
     ]);
 
-    // Endpoint này trả danh sách kết quả, mỗi phần tử ứng với một ID gốc.
     $rows = is_array($response) && array_is_list($response) ? $response : [$response];
 
     return array_values(array_filter(array_map(
@@ -304,7 +296,10 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Tính cước phí.
+   *
+   * Hãng luôn trả về một mảng bảng cước, mỗi dịch vụ một dòng: khai rõ mã dịch vụ
+   * thì mảng chỉ có đúng dòng đó, bỏ trống mã thì có cước của mọi dịch vụ đang mở cho tài khoản.
    */
   public function calculateFee(array $config, array $order): array {
     $sender = $order["sender"] ?? [];
@@ -345,9 +340,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
 
     $response = is_array($response["data"] ?? NULL) ? $response["data"] : $response;
 
-    // Hãng luôn trả về một mảng bảng cước, mỗi dịch vụ một dòng: khai rõ mã
-    // dịch vụ thì mảng chỉ có đúng dòng đó, bỏ trống mã thì có cước của mọi
-    // dịch vụ đang mở cho tài khoản.
     $records = array_values(array_filter(
       array_is_list($response) ? $response : [$response],
       "is_array",
@@ -378,7 +370,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Chi tiết đơn hàng.
    */
   public function getOrder(array $config, string $code, string $type = "1"): array {
     $response = $this->request($config, "/getOrder", [], NULL, "GET", TRUE, 30, [
@@ -386,8 +378,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "code" => $code,
     ]);
 
-    // Phong bì lỗi của hãng cũng là mảng kết hợp nên phải soi khoá đặc trưng
-    // của bưu gửi, tránh nhận nhầm thông báo lỗi làm bản ghi đơn hàng.
     foreach ($this->flattenResults($response) as $row) {
       if (isset($row["itemCode"]) || isset($row["orderHdrID"]) || isset($row["orderHdrId"])) {
         return $row;
@@ -398,7 +388,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Danh sách đơn hàng.
    */
   public function listOrders(array $config, array $params): array {
     $size = min((int) ($params["size"] ?? self::PAGE_SIZE), self::PAGE_SIZE);
@@ -409,7 +399,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "lastUpdateTo" => $this->apiDate($params["to"] ?? ""),
       "type" => (string) ($params["type"] ?? "GUI"),
       "size" => $size,
-      // Khoá cứng đơn trong nước, module không phục vụ đơn quốc tế.
       "isInternational" => "false",
     ];
 
@@ -432,8 +421,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       $rows = $this->flattenResults($response);
       $orders = array_merge($orders, $rows);
 
-      // Trang cuối cùng luôn ngắn hơn kích thước yêu cầu, dừng ở đó để khỏi
-      // gọi thừa một lượt trả về rỗng.
       if ($single_page || count($rows) < $size) {
         break;
       }
@@ -445,7 +432,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Hành trình đơn hàng.
    */
   public function orderHistory(array $config, string $code, string $type = "1"): array {
     $response = $this->request($config, "/GetStatusHistoryOrder", [], NULL, "GET", TRUE, 30, [
@@ -471,7 +458,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * In vận đơn.
    */
   public function printLabel(array $config, array $item_codes): array {
     $item_codes = array_values(array_unique(array_filter($item_codes)));
@@ -482,7 +469,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
 
     $files = [];
 
-    // Tài liệu giới hạn 100 bưu gửi mỗi lần gọi.
     foreach (array_chunk($item_codes, self::LABEL_BATCH_SIZE) as $chunk) {
       $response = $this->request($config, "/exportListReport", [], $chunk, "POST", TRUE, self::LONG_TIMEOUT);
 
@@ -503,7 +489,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Xác nhận tạo đơn nháp.
    */
   public function confirmDraft(array $config, string $code, string $type = "1"): array {
     $response = $this->request($config, "/createOrderByDraft", [], NULL, "GET", TRUE, self::LONG_TIMEOUT, [
@@ -515,7 +501,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * {@inheritdoc}
+   * Xóa đơn nháp.
    */
   public function deleteDraft(array $config, string $code, string $type = "1"): array {
     $response = $this->request($config, "/deleteOrderByDraft", [], NULL, "GET", TRUE, 30, [
@@ -635,7 +621,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "SourceCode" => "MYVNP",
       "ServiceCode" => (string) ($order["service"] ?? ""),
       "ItemCode" => (string) ($order["item_code"] ?? ""),
-      // 02 = hiệu chỉnh thông tin đơn hàng.
       "AffairType" => "02",
       "OrderCode" => (string) ($order["item_code"] ?? ""),
       "FlagConfig" => "1",
@@ -768,7 +753,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       throw new \DomainException($fallback);
     }
 
-    // Tùy endpoint mà bản ghi nằm thẳng ở gốc hoặc bọc thêm một lớp "data".
     $record = $response;
 
     if (empty($record["orderHdrID"]) && is_array($response["data"] ?? NULL)) {
@@ -794,6 +778,8 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
    *
    * @return array
    *   Kết quả gồm type, message, note, original_id, case_id, success.
+   * 
+   * "00" là chấp nhận, "02" là còn chờ duyệt, còn lại là bị từ chối.
    */
   private function caseResult(mixed $response): array {
     if (!is_array($response)) {
@@ -803,7 +789,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
     $type = (string) ($response["Type"] ?? $response["type"] ?? "");
 
     return [
-      // "00" là chấp nhận, "02" là còn chờ duyệt, còn lại là bị từ chối.
       "success" => $type === "00",
       "pending" => $type === "02",
       "type" => $type,
@@ -831,8 +816,6 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       return [];
     }
 
-    // Bản ghi đơn lẻ hoặc phong bì bọc ngoài: bóc lớp results/data rồi đệ quy,
-    // hết lớp bọc thì chính nó là một bản ghi.
     if (!array_is_list($response)) {
       foreach (["results", "data"] as $key) {
         if (isset($response[$key]) && is_array($response[$key])) {
@@ -926,7 +909,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
    *
    * @throws \DomainException
    *   Khi không kết nối được hoặc hãng trả mã lỗi HTTP.
-   * @throws \Drupal\shipping_integration\Exception\ShippingTokenException
+   * @throws ShippingTokenException
    *   Khi hãng từ chối vì token.
    */
   private function request(

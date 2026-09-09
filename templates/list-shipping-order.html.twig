@@ -73,21 +73,18 @@
 				<i class="bi bi-lightning-charge me-1"></i>{{ "Apply action"|t }}
 			</button>
 			<span class="small text-muted text-nowrap shipping-selected-count"></span>
-			{# Khai đơn mới: mở thẳng form, xong quay lại đúng trang danh sách này. #}
 			<a class="btn btn-success text-nowrap ms-auto"
 				href="{{ path("entity.shipping_order.add_form", {"shipping_order_type": filter.bundle}, {"query": {"destination": filter.destination}}) }}">
 				<i class="bi bi-plus-lg me-1"></i>{{ "Add order"|t }}
 			</a>
 		</div>
 
-		{# Form ẩn dùng chung cho mọi lệnh ở ô chọn trên. #}
 		<form method="POST" class="shipping-action-form d-none">
 			<input type="hidden" name="order_ids" value=""/>
 			<input type="hidden" name="draft" value="0"/>
 			<input type="hidden" name="destination" value="{{ filter.destination }}"/>
 		</form>
 
-		{# Nút ẩn để mở hộp thoại theo lựa chọn, dùng lại data-api của Bootstrap. #}
 		<button type="button" class="d-none shipping-modal-trigger" data-bs-toggle="modal" data-bs-target=""></button>
 	</div>
 

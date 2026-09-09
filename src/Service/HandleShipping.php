@@ -736,8 +736,12 @@ class HandleShipping {
       return NULL;
     }
 
+    // prepareDirectory() nhận tham số theo tham chiếu nên phải truyền biến thật,
+    // không truyền thẳng biểu thức gán.
+    $directory = static::LABEL_DIRECTORY;
+
     if (!$this->fileSystem->prepareDirectory(
-      $directory = static::LABEL_DIRECTORY,
+      $directory,
       FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS
     )) {
       $this->logger->error("Cannot prepare shipping label directory @dir", ["@dir" => $directory]);

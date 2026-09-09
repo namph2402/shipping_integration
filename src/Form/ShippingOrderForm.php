@@ -117,17 +117,17 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Khởi tạo form.
    *
-   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   * @param EntityRepositoryInterface $entity_repository
    *   Kho entity.
-   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
+   * @param EntityTypeBundleInfoInterface $entity_type_bundle_info
    *   Thông tin bundle.
-   * @param \Drupal\Component\Datetime\TimeInterface $time
+   * @param TimeInterface $time
    *   Dịch vụ thời gian.
-   * @param \Drupal\shipping_integration\Service\AddressOptions $addressOptions
+   * @param AddressOptions $addressOptions
    *   Danh sách chọn địa chỉ theo cấp.
-   * @param \Drupal\shipping_integration\Service\HandleShipping $handleShipping
+   * @param HandleShipping $handleShipping
    *   Nghiệp vụ gọi sang hãng vận chuyển.
-   * @param \Drupal\shipping_integration\ShippingOrderService $orderService
+   * @param ShippingOrderService $orderService
    *   Tiện ích dùng chung của đơn vận chuyển.
    */
   public function __construct(
@@ -214,7 +214,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form đang dựng.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param bool $two_level
    *   TRUE nếu đơn khai theo bộ địa chỉ hai cấp.
@@ -270,7 +270,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form đang dựng.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param bool $two_level
    *   TRUE nếu đơn khai theo bộ địa chỉ hai cấp.
@@ -278,13 +278,13 @@ final class ShippingOrderForm extends ContentEntityForm {
   private function buildReceiverCard(array &$form, FormStateInterface $form_state, bool $two_level): void {
     $card = $this->card($this->t("Receiver"));
 
-    $card["body"]["field_so_receiver_phone"] = $this->tune($form, "field_so_receiver_phone", [
-      "#title" => $this->t("Phone number"),
+    $card["body"]["field_so_receiver_name"] = $this->tune($form, "field_so_receiver_name", [
+      "#title" => $this->t("Receiver name"),
       "#required" => TRUE,
       "#wrapper_attributes" => ["class" => ["col-md-6"]],
     ]);
-    $card["body"]["field_so_receiver_name"] = $this->tune($form, "field_so_receiver_name", [
-      "#title" => $this->t("Receiver name"),
+    $card["body"]["field_so_receiver_phone"] = $this->tune($form, "field_so_receiver_phone", [
+      "#title" => $this->t("Phone number"),
       "#required" => TRUE,
       "#wrapper_attributes" => ["class" => ["col-md-6"]],
     ]);
@@ -311,7 +311,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form đang dựng.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    */
   private function buildServiceCard(array &$form, FormStateInterface $form_state): void {
@@ -715,7 +715,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    */
   public function callCarrier(array $form, FormStateInterface $form_state): void {
@@ -752,7 +752,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form đã dựng lại.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
    * @return array
@@ -769,7 +769,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form đã dựng lại.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
    * @return array
@@ -787,7 +787,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    */
   public function quoteServices(array $form, FormStateInterface $form_state): void {
@@ -828,7 +828,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * @param array $form
    *   Mảng form đã dựng lại.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
    * @return array
@@ -841,7 +841,7 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Dựng bảng cước các dịch vụ của lần hỏi gần nhất.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
    * @return array
@@ -891,7 +891,7 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Dựng ba ô chọn địa chỉ liên tầng của một bên.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param string $party
    *   "sender" hoặc "receiver".
@@ -969,7 +969,7 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Dựng dòng thông tin của tài khoản kết nối đang chọn.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
    * @return array
@@ -1168,7 +1168,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    * Đơn mới luôn dùng bộ hai cấp như màn khai đơn của hãng; đơn cũ đang giữ
    * địa chỉ ba cấp thì vẫn hiện đủ ba ô để không làm hỏng dữ liệu đã có.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
    * @return bool
@@ -1202,7 +1202,7 @@ final class ShippingOrderForm extends ContentEntityForm {
    * phải xoá khỏi cả dữ liệu người dùng gửi lên, nếu không ô select sẽ giữ
    * nguyên lựa chọn cũ và bị chặn ở bước kiểm tra giá trị hợp lệ.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param string $key
    *   Tên ô, ví dụ "sender_commune".
@@ -1241,7 +1241,7 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Giá trị đang chọn của một ô địa chỉ.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param string $party
    *   "sender" hoặc "receiver".
@@ -1264,7 +1264,7 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Giá trị đang chọn của một field, ưu tiên dữ liệu vừa gửi lên.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param string $field
    *   Tên field.

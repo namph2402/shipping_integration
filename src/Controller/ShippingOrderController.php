@@ -84,7 +84,6 @@ final class ShippingOrderController extends ControllerBase {
         "option_config" => $result["option_config"],
         "destination" => $request->getRequestUri(),
         "current_user" => $this->currentUser()->getAccountName(),
-        // Bundle để nút thêm đơn trỏ đúng form khai đơn của hãng.
         "bundle" => self::DOMESTIC_BUNDLE,
       ],
       "#attached" => [
