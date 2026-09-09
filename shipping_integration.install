@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\InstallStorage;
+use Drupal\shipping_integration\Service\GetConfigShipping;
+use Drupal\shipping_integration\Service\WebhookReceiver;
 
 /**
  * Nạp bộ cấu hình bundle, field và hiển thị cho đơn hàng và địa chỉ.
@@ -52,4 +54,73 @@ function shipping_integration_update_10001(): string {
   }
 
   return "Đã nạp cấu hình mặc định và cập nhật {$updated} bảng hiển thị.";
+}
+
+/**
+ * Nạp field khoá công khai webhook cho term cấu hình kết nối.
+ *
+ * Field mới chỉ được tạo khi chạy update vì module đã bật từ trước, và hai
+ * bảng hiển thị của term đã tồn tại nên phải ghi đè thủ công thì ô nhập khoá
+ * mới hiện ra trên form.
+ */
+function shipping_integration_update_10002(): string {
+  \Drupal::service('config.installer')->installDefaultConfig('module', 'shipping_integration');
+
+  $overrides = [
+    'core.entity_form_display.taxonomy_term.shipping_integration.default',
+    'core.entity_view_display.taxonomy_term.shipping_integration.default',
+  ];
+
+  $source = new FileStorage(
+    \Drupal::service('extension.list.module')->getPath('shipping_integration')
+    . '/' . InstallStorage::CONFIG_INSTALL_DIRECTORY
+  );
+
+  $updated = 0;
+
+  foreach ($overrides as $name) {
+    if (!$source->exists($name)) {
+      continue;
+    }
+
+    $config = \Drupal::configFactory()->getEditable($name);
+    $data = $source->read($name);
+
+    if ($uuid = $config->get('uuid')) {
+      $data['uuid'] = $uuid;
+    }
+
+    $config->setData($data)->save(TRUE);
+    $updated++;
+  }
+
+  return "Đã nạp field khoá công khai webhook và cập nhật {$updated} bảng hiển thị.";
+}
+
+/**
+ * Điền khoá công khai webhook mặc định cho các kết nối đã có từ trước.
+ *
+ * Giá trị mặc định của field chỉ áp cho entity tạo mới nên term kết nối cũ vẫn
+ * để trống, mà trống thì mọi lời gọi webhook đều bị từ chối.
+ */
+function shipping_integration_update_10003(): string {
+  $terms = \Drupal::entityTypeManager()
+    ->getStorage('taxonomy_term')
+    ->loadByProperties(['vid' => GetConfigShipping::VOCABULARY]);
+
+  $filled = 0;
+
+  foreach ($terms as $term) {
+    if (!$term->hasField('field_si_webhook_key') || trim((string) $term->get('field_si_webhook_key')->value) !== '') {
+      continue;
+    }
+
+    $term->set('field_si_webhook_key', WebhookReceiver::DEFAULT_PUBLIC_KEY);
+    // Đây chỉ là ghi thêm khoá, không cần xin lại token của hãng.
+    $term->skip_call_token = TRUE;
+    $term->save();
+    $filled++;
+  }
+
+  return "Đã điền khoá công khai webhook cho {$filled} kết nối.";
 }

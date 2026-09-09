@@ -46,3 +46,10 @@ services:
     class: Drupal\shipping_integration\Service\AddressOptions
     arguments:
       - "@entity_type.manager"
+
+  shipping_integration.webhook_receiver:
+    class: Drupal\shipping_integration\Service\WebhookReceiver
+    arguments:
+      - "@shipping_integration.handle_shipping"
+      - "@entity_type.manager"
+      - "@logger.channel.shipping_integration"

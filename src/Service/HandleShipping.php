@@ -422,6 +422,100 @@ class HandleShipping {
   }
 
   /**
+   * Ghi dữ liệu webhook hãng đẩy về vào các đơn hàng tương ứng.
+   *
+   * Webhook chỉ báo thay đổi của đơn đã có trên hệ thống hãng nên hàm này
+   * không tạo đơn mới: bưu gửi không tra được sẽ được ghi lại để đối soát chứ
+   * không dựng ra đơn rỗng thiếu người gửi, người nhận.
+   *
+   * Gói tin dùng bộ tên trường riêng và có những mục module không có cột lưu
+   * (lý do không phát được, người nhận thực tế, trạng thái thanh toán) nên bản
+   * ghi thô được giữ nguyên trong field_so_payload để tra khi cần.
+   *
+   * @param array $records
+   *   Danh sách bản ghi đơn hàng trong gói tin webhook.
+   *
+   * @return array
+   *   Số đơn đã cập nhật và danh sách bưu gửi không tra được.
+   *
+   * @see https://my-uat.vnpost.vn/static/api/webhook/send-webhook
+   */
+  public function applyWebhook(array $records): array {
+    $storage = $this->entityTypeManager->getStorage("shipping_order");
+    $updated = 0;
+    $missing = [];
+
+    foreach ($records as $record) {
+      $item_code = (string) ($record["itemCode"] ?? $record["originalItemCode"] ?? "");
+      $original_id = (string) ($record["originalId"] ?? $record["originalID"] ?? "");
+
+      $order = NULL;
+
+      foreach (["field_so_item_code" => $item_code, "field_so_original_id" => $original_id] as $field => $value) {
+        if ($value === "") {
+          continue;
+        }
+
+        $found = $storage->loadByProperties([$field => $value]);
+        $order = reset($found);
+
+        if ($order instanceof ShippingOrderInterface) {
+          break;
+        }
+
+        $order = NULL;
+      }
+
+      if ($order === NULL) {
+        $missing[] = $item_code !== "" ? $item_code : $original_id;
+        continue;
+      }
+
+      $this->applyWebhookRecord($order, $record);
+      $order->save();
+      $updated++;
+    }
+
+    return ["updated" => $updated, "missing" => $missing];
+  }
+
+  /**
+   * Ghi một bản ghi webhook vào entity đơn hàng.
+   *
+   * Chỉ nhận những trường module có cột lưu và chắc chắn cùng bộ giá trị với
+   * lệnh tạo đơn. Hình thức gửi và yêu cầu khi phát cố tình bỏ qua vì webhook
+   * mô tả chúng bằng bộ mã khác (TGTN, GHTBC) so với danh sách giá trị hợp lệ
+   * của field, ghi vào sẽ làm hỏng dữ liệu đang có.
+   *
+   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   *   Đơn hàng cần cập nhật.
+   * @param array $record
+   *   Bản ghi trong gói tin webhook.
+   */
+  private function applyWebhookRecord(ShippingOrderInterface $order, array $record): void {
+    $this->setValue($order, "field_so_hdr_id", $record["orderHdrId"] ?? $record["orderHdrID"] ?? "");
+    $this->setValue($order, "field_so_original_id", $record["originalId"] ?? $record["originalID"] ?? "");
+    $this->setValue($order, "field_so_item_code", $record["itemCode"] ?? "");
+    $this->setValue($order, "field_so_sale_code", $record["saleOrderCode"] ?? "");
+    $this->setValue($order, "field_so_status", $record["status"] ?? NULL);
+    $this->setValue($order, "field_so_service", $record["serviceCode"] ?? "");
+    $this->setValue($order, "field_so_main_fee", $record["mainFee"] ?? NULL);
+    $this->setValue($order, "field_so_vas_fee", $record["vasFee"] ?? NULL);
+    $this->setValue($order, "field_so_total_fee", $record["totalFee"] ?? NULL);
+    $this->setValue($order, "field_so_price_weight", $record["priceWeight"] ?? NULL);
+    $this->setValue($order, "field_so_cod", $record["codAmount"] ?? NULL);
+    $this->setValue($order, "field_so_weight", $record["weight"] ?? NULL);
+    $this->setValue($order, "field_so_content", $record["contentNote"] ?? "");
+    $this->setValue($order, "field_so_org_accept", $record["orgCodeAccept"] ?? "");
+    $this->setValue($order, "field_so_payload", json_encode($record, JSON_UNESCAPED_UNICODE));
+    $this->setValue($order, "field_so_synced", $this->time->getRequestTime());
+
+    if ($order->get("label")->isEmpty() && !empty($record["itemCode"])) {
+      $order->set("label", $record["itemCode"]);
+    }
+  }
+
+  /**
    * Chạy một lệnh trên đơn hàng, bọc sẵn xử lý lỗi và làm mới token.
    *
    * @param \Drupal\shipping_integration\ShippingOrderInterface $order

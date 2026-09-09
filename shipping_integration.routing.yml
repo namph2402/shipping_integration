@@ -177,3 +177,17 @@ shipping_integration.refresh_token:
     parameters:
       taxonomy_term:
         type: 'entity:taxonomy_term'
+
+# Hãng gọi về mỗi khi đơn đổi thông tin hoặc trạng thái. Không đặt điều kiện
+# quyền vì hãng không gửi kèm tài khoản; chữ ký RSA trong gói tin mới là thứ
+# xác thực, và WebhookReceiver kiểm tra nó trước khi ghi bất cứ thứ gì.
+shipping_integration.webhook:
+  path: 'shipping/webhook'
+  defaults:
+    _title: 'Webhook vận chuyển'
+    _controller: '\Drupal\shipping_integration\Controller\WebhookController::receive'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE

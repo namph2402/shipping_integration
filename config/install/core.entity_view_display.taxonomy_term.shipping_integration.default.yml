@@ -9,6 +9,7 @@ dependencies:
     - field.field.taxonomy_term.shipping_integration.field_si_password
     - field.field.taxonomy_term.shipping_integration.field_si_token
     - field.field.taxonomy_term.shipping_integration.field_si_type
+    - field.field.taxonomy_term.shipping_integration.field_si_webhook_key
     - field.field.taxonomy_term.shipping_integration.field_si_username
     - taxonomy.vocabulary.shipping_integration
   module:
@@ -75,4 +76,5 @@ content:
     third_party_settings: {  }
     weight: 7
     region: content
-hidden: {  }
+hidden:
+  field_si_webhook_key: true

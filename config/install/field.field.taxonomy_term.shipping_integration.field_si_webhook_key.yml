@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_webhook_key
+    - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
+id: taxonomy_term.shipping_integration.field_si_webhook_key
+field_name: field_si_webhook_key
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: 'Khoá công khai webhook'
+description: 'Khoá RSA 2048 của hãng dùng để kiểm tra chữ ký mỗi lần webhook gọi về. Để trống là mọi lời gọi webhook của kết nối này đều bị từ chối. Khoá mặc định lấy từ tài liệu MyVNPost, môi trường thật có thể khác.'
+required: false
+translatable: false
+default_value:
+  -
+    value: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuAYZvjAsrSnyhl8lQxZklGywLaMfE8sLBQLIo3Q8kyW9jrpCVttyUAAP+IdaEuLYx4T6hV7MgKqJlkQAyikY1bkos7Gj0KkTUKv0gf7KL8+v55nbObdBagjb+amX/wbuWXYhJ3m67PI63tHbm1GoeyUeVmZh+XOcXrFoCts+Z+S590w2cfGfo8h60sp4TOu+EiNZq/jvcWCSDA+xszSdbOagCY0MXBFCG7iQ3WQlS3A3VcFILOIBwT75j/CIYG+jbGrrvRhrU+eu7C4hboG9wNVrDtxIUYjxoFH8OpFgxaCoYGBCAhXjtWC+MpzcR44l1Kku1wlzQLzh6dXgI3fPOwIDAQAB"
+    format: null
+default_value_callback: ''
+settings: {  }
+field_type: string_long

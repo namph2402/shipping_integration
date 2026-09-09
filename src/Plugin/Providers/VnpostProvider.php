@@ -386,8 +386,12 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "code" => $code,
     ]);
 
+    // Phong bì lỗi của hãng cũng là mảng kết hợp nên phải soi khoá đặc trưng
+    // của bưu gửi, tránh nhận nhầm thông báo lỗi làm bản ghi đơn hàng.
     foreach ($this->flattenResults($response) as $row) {
-      return $row;
+      if (isset($row["itemCode"]) || isset($row["orderHdrID"]) || isset($row["orderHdrId"])) {
+        return $row;
+      }
     }
 
     return [];
@@ -827,8 +831,16 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       return [];
     }
 
-    if (isset($response["results"]) && is_array($response["results"])) {
-      return array_values(array_filter($response["results"], "is_array"));
+    // Bản ghi đơn lẻ hoặc phong bì bọc ngoài: bóc lớp results/data rồi đệ quy,
+    // hết lớp bọc thì chính nó là một bản ghi.
+    if (!array_is_list($response)) {
+      foreach (["results", "data"] as $key) {
+        if (isset($response[$key]) && is_array($response[$key])) {
+          return $this->flattenResults($response[$key]);
+        }
+      }
+
+      return [$response];
     }
 
     $result = [];

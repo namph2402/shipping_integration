@@ -103,6 +103,7 @@ thô…) bị gỡ khỏi form: chỉ hãng và module ghi vào đó.
 | In vận đơn | `POST /exportListReport` |
 | Phát hành / xóa đơn nháp | `GET /createOrderByDraft`, `GET /deleteOrderByDraft` |
 | Danh mục địa chỉ | `getAllProvince`, `getAllDistrict`, `getAllCommune`, `getNewProvinceAll`, `getNewCommuneAll` |
+| Webhook hãng gọi về | `POST /shipping/webhook` (chiều ngược lại, xem mục Webhook) |
 
 Xác thực bằng header `token` (không phải `Authorization: Bearer`). Khi hãng trả
 401/403, `HandleShipping` xin token mới rồi gọi lại đúng một lần.
@@ -113,6 +114,45 @@ thật.
 
 Dịch vụ cộng thêm được sinh từ field của đơn: COD → `GTG021`/`PROP0018`, khai
 giá → `GTG008`/`PROP0026`.
+
+## Webhook
+
+Hãng đẩy về mọi thay đổi thông tin và trạng thái của đơn, module nhận tại:
+
+```
+POST https://<tên miền site>/shipping/webhook
+```
+
+Đường dẫn này hiện sẵn ngay trên form của term kết nối để copy đi khai báo.
+
+**Đăng ký với VNPost** (hãng không có API đăng ký, phải khai tay):
+
+1. Khách hàng: khai URL tại chức năng *Cấu hình Webhook* trên cổng MyVNPost.
+   Đối tác: URL được khai lúc khởi tạo thông tin đối tác.
+2. Gửi yêu cầu để VNPost **add whitelist** cho URL và IP của site. Chưa được
+   whitelist thì hãng không gọi về. Yêu cầu này phải gửi trước thời điểm golive.
+
+**Xác thực**: gói tin có dạng `{data: [đơn...], sendDate, signature}`, chữ ký là
+`RSASHA256("MYVNP" + sendDate + itemCode + status)` với `itemCode` và `status`
+của bưu gửi đầu tiên trong mảng. Module kiểm tra chữ ký bằng khoá công khai RSA
+2048 lưu ở `field_si_webhook_key` của term kết nối (mặc định là khoá trong tài
+liệu MyVNPost, môi trường thật có thể khác). Ký sai là bỏ toàn bộ gói tin và
+trả 401, không ghi gì vào cơ sở dữ liệu; để trống khoá cũng đồng nghĩa từ chối
+mọi lời gọi.
+
+**Xử lý**: mỗi bản ghi được tra theo số hiệu bưu gửi rồi tới ID gốc. Đơn chưa
+có trên hệ thống thì bỏ qua và ghi log chứ không tạo đơn rỗng, vì webhook không
+mang đủ thông tin người gửi, người nhận. Đơn tra được sẽ cập nhật trạng thái,
+cước, tiền thu hộ, khối lượng tính cước, bưu cục phục vụ, mã đơn và nội dung;
+bản ghi thô giữ nguyên trong `field_so_payload` để tra những mục module không
+có cột lưu (lý do không phát được, người nhận thực tế, trạng thái thanh toán).
+
+Hình thức gửi và yêu cầu khi phát cố tình **không** nhận từ webhook: gói tin mô
+tả chúng bằng bộ mã khác (`TGTN`, `GHTBC`) với danh sách giá trị hợp lệ của
+field, ghi vào sẽ làm hỏng dữ liệu đang có.
+
+Phản hồi trả về hãng luôn là JSON `{success, message, updated}` kèm mã HTTP 200
+khi nhận được, 400 khi gói tin sai định dạng, 401 khi chữ ký không hợp lệ.
 
 ## Thêm một hãng vận chuyển mới
 

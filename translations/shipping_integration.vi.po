@@ -938,3 +938,13 @@ msgstr "Hãng không trả về cước của dịch vụ nào."
 #: templates/list-shipping-order.html.twig
 msgid "Add order"
 msgstr "Thêm đơn"
+
+# Webhook.
+
+#: shipping_integration.module
+msgid "Webhook URL"
+msgstr "Đường dẫn webhook"
+
+#: shipping_integration.module
+msgid "Declare this URL in the Webhook configuration screen of the carrier portal, then ask the carrier to whitelist the URL and the IP of this site before going live. The carrier calls this address every time an order changes, and the module updates the matching order."
+msgstr "Khai đường dẫn này tại chức năng Cấu hình Webhook trên cổng của hãng, sau đó gửi yêu cầu để hãng thêm URL và IP của site vào whitelist trước khi golive. Mỗi lần đơn đổi thông tin hoặc trạng thái, hãng sẽ gọi về đây và module tự cập nhật đơn tương ứng."

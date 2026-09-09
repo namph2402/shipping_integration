@@ -10,6 +10,5 @@ dependencies:
   - drupal:taxonomy
   - drupal:views
 
-# Cho phép locale nạp translations/shipping_integration.vi.po khi kiểm tra bản dịch.
 'interface translation project': shipping_integration
 'interface translation server pattern': modules/custorm/shipping_integration/translations/%project.%language.po

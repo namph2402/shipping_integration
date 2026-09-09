@@ -8,7 +8,9 @@
 declare(strict_types=1);
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 use Drupal\shipping_integration\Service\GetConfigShipping;
 
 /**
@@ -88,6 +90,25 @@ function template_preprocess_shipping_type(array &$variables): void {
   foreach (Element::children($variables['elements']) as $key) {
     $variables['content'][$key] = $variables['elements'][$key];
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for taxonomy_term_shipping_integration_form.
+ *
+ * Hãng không có API đăng ký webhook: URL phải tự khai trong chức năng Cấu hình
+ * Webhook trên cổng MyVNPost rồi gửi yêu cầu để hãng cho vào whitelist. Vì thế
+ * form kết nối hiện sẵn đúng đường dẫn cần khai để khỏi phải tự ghép tay.
+ */
+function shipping_integration_form_taxonomy_term_shipping_integration_form_alter(array &$form, FormStateInterface $form_state): void {
+  $url = Url::fromRoute('shipping_integration.webhook')->setAbsolute()->toString();
+
+  $form['shipping_webhook'] = [
+    '#type' => 'item',
+    '#title' => t('Webhook URL'),
+    '#markup' => '<code>' . $url . '</code>',
+    '#description' => t('Declare this URL in the Webhook configuration screen of the carrier portal, then ask the carrier to whitelist the URL and the IP of this site before going live. The carrier calls this address every time an order changes, and the module updates the matching order.'),
+    '#weight' => 20,
+  ];
 }
 
 /**
