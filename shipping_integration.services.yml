@@ -26,6 +26,7 @@ services:
       - "@file.repository"
       - "@logger.channel.shipping_integration"
       - "@datetime.time"
+      - "@shipping_integration.order_logger"
 
   shipping_integration.synchronize_addresses:
     class: Drupal\shipping_integration\Service\SynchronizeAddresses
@@ -46,6 +47,14 @@ services:
     class: Drupal\shipping_integration\Service\AddressOptions
     arguments:
       - "@entity_type.manager"
+
+  shipping_integration.order_logger:
+    class: Drupal\shipping_integration\Service\ShippingOrderLogger
+    arguments:
+      - "@entity_type.manager"
+      - "@current_user"
+      - "@request_stack"
+      - "@logger.channel.shipping_integration"
 
   shipping_integration.webhook_receiver:
     class: Drupal\shipping_integration\Service\WebhookReceiver

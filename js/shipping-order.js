@@ -79,6 +79,8 @@
     code.textContent = data.itemCode || '';
     body.innerHTML = '<p class="text-muted mb-0">' + Drupal.t('Loading...') + '</p>';
 
+    loadOrderLog(modal, data.logUrl);
+
     fetch(data.url, { headers: { Accept: 'application/json' } })
       .then(function (response) {
         return response.json();
@@ -104,6 +106,82 @@
       .catch(function () {
         body.innerHTML = '<p class="text-danger mb-0">'
           + Drupal.t('Cannot load the tracking history.')
+          + '</p>';
+      });
+  }
+
+  /**
+   * Nạp nhật ký hệ thống của đơn vào tab thứ hai của hộp thoại.
+   *
+   * Nạp luôn cùng lúc với hành trình thay vì chờ người dùng bấm sang tab, vì
+   * hai lệnh gọi này độc lập và nhật ký đọc từ cơ sở dữ liệu nên rất nhanh.
+   *
+   * @param {Element} modal
+   *   Phần tử hộp thoại.
+   * @param {string} url
+   *   Endpoint trả nhật ký của đơn.
+   */
+  function loadOrderLog(modal, url) {
+    var body = modal.querySelector('.shipping-log-body');
+
+    if (!body) {
+      return;
+    }
+
+    if (!url) {
+      body.innerHTML = '<p class="text-muted mb-0">' + Drupal.t('No log entries yet.') + '</p>';
+      return;
+    }
+
+    body.innerHTML = '<p class="text-muted mb-0">' + Drupal.t('Loading...') + '</p>';
+
+    fetch(url, { headers: { Accept: 'application/json' } })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (result) {
+        if (!result.success || !result.data || !result.data.length) {
+          body.innerHTML = '<p class="text-muted mb-0">'
+            + Drupal.checkPlain(result.message || Drupal.t('No log entries yet.'))
+            + '</p>';
+          return;
+        }
+
+        var rows = result.data.map(function (entry) {
+          var change = entry.status_to === ''
+            ? ''
+            : Drupal.checkPlain(
+              entry.status_from === '' || entry.status_from === entry.status_to
+                ? entry.status_to
+                : entry.status_from + ' \u2192 ' + entry.status_to
+            );
+
+          var actor = entry.actor || entry.ip || '';
+
+          return '<tr class="' + (entry.succeeded ? '' : 'table-warning') + '">'
+            + '<td class="text-nowrap small">' + Drupal.checkPlain(entry.time) + '</td>'
+            + '<td class="text-nowrap small">' + Drupal.checkPlain(entry.source)
+            + (entry.verified ? ' <span class="badge text-bg-success">'
+              + Drupal.t('verified') + '</span>' : '')
+            + '</td>'
+            + '<td class="text-nowrap small">' + change + '</td>'
+            + '<td class="small">' + Drupal.checkPlain(entry.message) + '</td>'
+            + '<td class="text-nowrap small text-muted">' + Drupal.checkPlain(actor) + '</td>'
+            + '</tr>';
+        });
+
+        body.innerHTML = '<div class="table-responsive"><table class="table table-sm mb-0">'
+          + '<thead><tr>'
+          + '<th>' + Drupal.t('Time') + '</th>'
+          + '<th>' + Drupal.t('Source') + '</th>'
+          + '<th>' + Drupal.t('Status change') + '</th>'
+          + '<th>' + Drupal.t('Message') + '</th>'
+          + '<th>' + Drupal.t('Performed by') + '</th>'
+          + '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+      })
+      .catch(function () {
+        body.innerHTML = '<p class="text-danger mb-0">'
+          + Drupal.t('Cannot load the system log.')
           + '</p>';
       });
   }

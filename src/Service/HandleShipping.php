@@ -45,6 +45,7 @@ class HandleShipping {
     protected FileRepositoryInterface $fileRepository,
     protected LoggerInterface $logger,
     protected TimeInterface $time,
+    protected ShippingOrderLogger $orderLogger,
   ) {}
 
   /**
@@ -72,7 +73,7 @@ class HandleShipping {
    *   Kết quả gồm success và message, kèm data khi thành công.
    */
   public function createOrder(ShippingOrderInterface $order, bool $draft = FALSE): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order, $draft): array {
+    return $this->run($order, $draft ? "draft" : "create", function (ShippingProvidersInterface $provider, array $config) use ($order, $draft): array {
       $payload = $this->buildOrderPayload($order);
       $payload["draft"] = $draft;
 
@@ -102,7 +103,7 @@ class HandleShipping {
    *   Kết quả gồm success và message, kèm data khi thành công.
    */
   public function confirmDraft(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "confirm_draft", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       if ((int) $this->fieldValue($order, "field_so_status") !== self::STATUS_DRAFT) {
         return [
           "success" => FALSE,
@@ -132,7 +133,7 @@ class HandleShipping {
    *   Kết quả gồm success và message.
    */
   public function updateOrder(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "update", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $result = $provider->updateOrder($config, $this->buildOrderPayload($order));
       $this->applyCase($order, $result);
       $order->save();
@@ -157,7 +158,7 @@ class HandleShipping {
    * Đơn còn ở trạng thái nháp chưa có ID gốc thì xóa nháp thay vì hủy.
    */
   public function cancelOrder(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "cancel", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $original_id = $this->fieldValue($order, "field_so_original_id");
 
       // Đơn nháp phải xóa nháp chứ không hủy: /orderCancel từ chối đơn chưa
@@ -194,7 +195,7 @@ class HandleShipping {
    *   Kết quả gồm success và message.
    */
   public function approvalResult(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "approval", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $case_id = $this->fieldValue($order, "field_so_case_id");
 
       if ($case_id === "") {
@@ -237,7 +238,7 @@ class HandleShipping {
    *   Kết quả gồm success, message và data là bảng cước.
    */
   public function calculateFee(ShippingOrderInterface $order, bool $save = TRUE): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order, $save): array {
+    return $this->run($order, "fee", function (ShippingProvidersInterface $provider, array $config) use ($order, $save): array {
       $fee = $provider->calculateFee($config, $this->buildOrderPayload($order));
 
       if ($save) {
@@ -266,7 +267,7 @@ class HandleShipping {
    *   Kết quả gồm success và message.
    */
   public function synchronizeOrder(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "sync", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $record = $provider->getOrder($config, $this->lookupCode($order), $this->lookupType($order));
 
       if (empty($record)) {
@@ -297,7 +298,7 @@ class HandleShipping {
    *   Kết quả gồm success, message và data là danh sách mốc hành trình.
    */
   public function orderHistory(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "history", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $history = $provider->orderHistory($config, $this->lookupCode($order), $this->lookupType($order));
 
       $this->setValue($order, "field_so_history", json_encode($history, JSON_UNESCAPED_UNICODE));
@@ -321,7 +322,7 @@ class HandleShipping {
    *   Kết quả gồm success, message và data là entity file.
    */
   public function printLabel(ShippingOrderInterface $order): array {
-    return $this->run($order, function (ShippingProvidersInterface $provider, array $config) use ($order): array {
+    return $this->run($order, "label", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
       $item_code = $this->fieldValue($order, "field_so_item_code");
 
       if ($item_code === "") {
@@ -399,6 +400,7 @@ class HandleShipping {
 
       $existing = $storage->loadByProperties(["field_so_item_code" => $item_code]);
       $order = reset($existing);
+      $before = $order instanceof ShippingOrderInterface ? $this->orderLogger->currentStatus($order) : NULL;
 
       if (!$order instanceof ShippingOrderInterface) {
         $order = $storage->create([
@@ -408,13 +410,22 @@ class HandleShipping {
           "field_so_carrier" => $config["shipping_type_id"],
         ]);
         $created++;
+        $is_new = TRUE;
       }
       else {
         $updated++;
+        $is_new = FALSE;
       }
 
       $this->applyRecord($order, $record, TRUE);
       $order->save();
+
+      $this->orderLogger->log($order, "pull", [
+        "message" => $is_new ? "Kéo về đơn mới từ hệ thống hãng" : "Cập nhật đơn theo hệ thống hãng",
+        "status_from" => $before,
+        "status_to" => $this->orderLogger->currentStatus($order),
+        "payload" => $record,
+      ]);
     }
 
     return [
@@ -444,7 +455,7 @@ class HandleShipping {
    *
    * @see https://my-uat.vnpost.vn/static/api/webhook/send-webhook
    */
-  public function applyWebhook(array $records): array {
+  public function applyWebhook(array $records, bool $verified = FALSE): array {
     $storage = $this->entityTypeManager->getStorage("shipping_order");
     $updated = 0;
     $missing = [];
@@ -472,12 +483,34 @@ class HandleShipping {
 
       if ($order === NULL) {
         $missing[] = $item_code !== "" ? $item_code : $original_id;
+
+        // Bưu gửi chưa có trên hệ thống vẫn ghi lại: về sau còn biết hãng đã
+        // từng đẩy gì về mà mình bỏ qua.
+        $this->orderLogger->log(NULL, "webhook", [
+          "item_code" => $item_code !== "" ? $item_code : $original_id,
+          "succeeded" => FALSE,
+          "message" => "Bưu gửi chưa có trên hệ thống",
+          "status_to" => $record["status"] ?? NULL,
+          "payload" => $record,
+          "verified" => $verified,
+        ]);
+
         continue;
       }
+
+      $before = $this->orderLogger->currentStatus($order);
 
       $this->applyWebhookRecord($order, $record);
       $order->save();
       $updated++;
+
+      $this->orderLogger->log($order, "webhook", [
+        "message" => "Hãng đẩy trạng thái về",
+        "status_from" => $before,
+        "status_to" => $this->orderLogger->currentStatus($order),
+        "payload" => $record,
+        "verified" => $verified,
+      ]);
     }
 
     return ["updated" => $updated, "missing" => $missing];
@@ -530,7 +563,37 @@ class HandleShipping {
    * @return array
    *   Kết quả gồm success và message.
    */
-  private function run(ShippingOrderInterface $order, callable $operation): array {
+  private function run(ShippingOrderInterface $order, string $source, callable $operation): array {
+    $before = $this->orderLogger->currentStatus($order);
+    $result = $this->execute($order, $operation);
+
+    // Chỉ ghi lại dữ liệu dạng mảng: có lệnh trả về entity file nên json_encode
+    // sẽ ra thứ vô nghĩa, mà nhật ký cần đọc được chứ không cần đủ.
+    $data = $result["data"] ?? NULL;
+
+    $this->orderLogger->log($order, $source, [
+      "succeeded" => !empty($result["success"]),
+      "message" => $result["message"] ?? "",
+      "status_from" => $before,
+      "status_to" => $this->orderLogger->currentStatus($order),
+      "payload" => is_array($data) ? $data : NULL,
+    ]);
+
+    return $result;
+  }
+
+  /**
+   * Chạy lệnh và chuẩn hoá lỗi, không quan tâm tới nhật ký.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng đang thao tác.
+   * @param callable $operation
+   *   Hàm nhận (provider, config) và trả về mảng kết quả.
+   *
+   * @return array
+   *   Kết quả gồm success và message.
+   */
+  private function execute(ShippingOrderInterface $order, callable $operation): array {
     try {
       $config_entity = $order->hasField("field_so_config")
         ? $order->get("field_so_config")->entity
@@ -901,6 +964,10 @@ class HandleShipping {
       return;
     }
 
+    // Mọi thay đổi do gọi hãng đều đi qua đây và đã được ghi nhật ký với nguồn
+    // cụ thể, nên đánh dấu để hook presave không ghi thêm một dòng "sửa tay"
+    // trùng lặp cho cùng một lần lưu.
+    $order->skip_order_log = TRUE;
     $order->set($field, $value);
   }
 

@@ -124,3 +124,72 @@ function shipping_integration_update_10003(): string {
 
   return "Đã điền khoá công khai webhook cho {$filled} kết nối.";
 }
+
+/**
+ * Nạp field khoá bí mật và cờ bỏ qua kiểm chữ ký cho term cấu hình kết nối.
+ *
+ * Mã mẫu Java của MyVNPost cho thấy trường signature là kết quả mã hoá RSA
+ * bằng khoá công khai chứ không phải chữ ký số, nên khoá công khai không kiểm
+ * được gói tin; phải có khoá riêng của hãng để giải mã. Hai field mới chỉ được
+ * tạo khi chạy update vì module đã bật từ trước, và hai bảng hiển thị của term
+ * đã tồn tại nên phải ghi đè thủ công thì ô nhập mới hiện ra trên form.
+ */
+function shipping_integration_update_10004(): string {
+  \Drupal::service('config.installer')->installDefaultConfig('module', 'shipping_integration');
+
+  $overrides = [
+    'core.entity_form_display.taxonomy_term.shipping_integration.default',
+    'core.entity_view_display.taxonomy_term.shipping_integration.default',
+  ];
+
+  $source = new FileStorage(
+    \Drupal::service('extension.list.module')->getPath('shipping_integration')
+    . '/' . InstallStorage::CONFIG_INSTALL_DIRECTORY
+  );
+
+  $updated = 0;
+
+  foreach ($overrides as $name) {
+    if (!$source->exists($name)) {
+      continue;
+    }
+
+    $config = \Drupal::configFactory()->getEditable($name);
+    $data = $source->read($name);
+
+    if ($uuid = $config->get('uuid')) {
+      $data['uuid'] = $uuid;
+    }
+
+    $config->setData($data)->save(TRUE);
+    $updated++;
+  }
+
+  return "Đã nạp field khoá bí mật webhook, cờ bỏ qua kiểm chữ ký và cập nhật {$updated} bảng hiển thị.";
+}
+
+/**
+ * Cài entity nhật ký đơn vận chuyển.
+ *
+ * Đơn hàng chỉ giữ giá trị mới nhất nên mỗi webhook hay mỗi lệnh đồng bộ đều
+ * đè mất trạng thái cũ, không còn cách truy lại đơn đã đi qua những gì. Entity
+ * shipping_order_log ghi lại từng thay đổi kèm nguồn gây ra nó.
+ */
+function shipping_integration_update_10005(): string {
+  $entity_type_manager = \Drupal::entityTypeManager();
+  $entity_type_manager->clearCachedDefinitions();
+
+  $definition = $entity_type_manager->getDefinition('shipping_order_log', FALSE);
+
+  if ($definition === NULL) {
+    return 'Không tìm thấy định nghĩa entity shipping_order_log, bỏ qua.';
+  }
+
+  if (\Drupal::database()->schema()->tableExists('shipping_order_log')) {
+    return 'Bảng nhật ký đã tồn tại, không cần cài lại.';
+  }
+
+  \Drupal::entityDefinitionUpdateManager()->installEntityType($definition);
+
+  return 'Đã cài entity nhật ký đơn vận chuyển (bảng shipping_order_log).';
+}

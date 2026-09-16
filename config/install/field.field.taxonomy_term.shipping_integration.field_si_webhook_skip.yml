@@ -1,0 +1,24 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_webhook_skip
+    - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
+id: taxonomy_term.shipping_integration.field_si_webhook_skip
+field_name: field_si_webhook_skip
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: 'Bỏ qua kiểm chữ ký webhook (chỉ để thử nghiệm)'
+description: 'Bật thì mọi gói tin webhook của kết nối này đều được ghi vào đơn hàng mà không kiểm chữ ký. Endpoint webhook mở công khai nên bật cờ này đồng nghĩa ai cũng sửa được trạng thái đơn hàng. Chỉ dùng trên môi trường thử nghiệm và tắt lại ngay sau khi xong.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'Bỏ qua kiểm chữ ký'
+  off_label: 'Kiểm chữ ký như bình thường'
+field_type: boolean

@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_webhook_privkey
+    - taxonomy.vocabulary.shipping_integration
+  module:
+    - taxonomy
+id: taxonomy_term.shipping_integration.field_si_webhook_privkey
+field_name: field_si_webhook_privkey
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: 'Khoá bí mật webhook'
+description: 'Khoá RSA riêng do hãng cấp, dùng để giải mã trường signature của gói tin webhook. MyVNPost mã hoá chuỗi xác thực bằng khoá công khai (Cipher.ENCRYPT_MODE) chứ không ký số, nên chỉ khoá riêng mới mở được. Dán phần base64 hoặc cả khối PEM đều được. Để trống thì module quay về kiểm chữ ký số bằng khoá công khai.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

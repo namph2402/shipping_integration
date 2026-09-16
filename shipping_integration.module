@@ -166,3 +166,69 @@ function _shipping_integration_flush_local_actions(EntityInterface $entity): voi
     \Drupal::service('plugin.manager.menu.local_action')->clearCachedDefinitions();
   }
 }
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for shipping_order.
+ *
+ * Ghi lại những lần đơn bị sửa trực tiếp trên form quản trị. Các lệnh gọi hãng
+ * đã tự ghi nhật ký trong HandleShipping với nguồn cụ thể, nên ở đây chỉ nhận
+ * phần còn lại là người dùng sửa tay, và bỏ qua khi không có gì thay đổi để
+ * nhật ký không đầy những dòng rỗng.
+ */
+function shipping_integration_shipping_order_presave(EntityInterface $entity): void {
+  /** @var \Drupal\shipping_integration\ShippingOrderInterface $entity */
+  if ($entity->isNew()) {
+    return;
+  }
+
+  // Cờ chỉ có tác dụng cho đúng một lần lưu rồi tự hết: HandleShipping đặt nó
+  // ngay trước khi lưu, nếu để dính lại thì mọi lần sửa tay sau đó trong cùng
+  // một request đều bị bỏ qua.
+  if (!empty($entity->skip_order_log)) {
+    $entity->skip_order_log = FALSE;
+
+    return;
+  }
+
+  $original = $entity->original ?? NULL;
+
+  if ($original === NULL) {
+    return;
+  }
+
+  // HandleShipping đặt cờ này quanh các lệnh gọi hãng, nên tới đây nghĩa là
+  // thay đổi đến từ form hoặc từ code khác chứ không phải từ hãng.
+  $changed = [];
+
+  foreach (['field_so_status', 'field_so_service', 'field_so_weight', 'field_so_cod',
+    'field_so_receiver_name', 'field_so_receiver_phone', 'field_so_receiver_address',
+    'field_so_sender_name', 'field_so_sender_phone', 'field_so_sender_address',
+  ] as $field) {
+    if (!$entity->hasField($field)) {
+      continue;
+    }
+
+    $now = (string) $entity->get($field)->value;
+    $was = (string) $original->get($field)->value;
+
+    // Trường số thập phân đọc ra "100000.00" trong khi giá trị vừa ghi là
+    // "100000", so chuỗi sẽ báo thay đổi giả nên phải so theo giá trị số.
+    $same = is_numeric($now) && is_numeric($was)
+      ? (float) $now === (float) $was
+      : $now === $was;
+
+    if (!$same) {
+      $changed[] = $field;
+    }
+  }
+
+  if ($changed === []) {
+    return;
+  }
+
+  \Drupal::service('shipping_integration.order_logger')->log($entity, 'manual', [
+    'message' => 'Sửa trên form: ' . implode(', ', str_replace('field_so_', '', $changed)),
+    'status_from' => (string) $original->get('field_so_status')->value,
+    'status_to' => (string) $entity->get('field_so_status')->value,
+  ]);
+}

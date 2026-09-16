@@ -191,6 +191,7 @@
 												<button type="button" class="dropdown-item btn-shipping-history"
 													data-bs-toggle="modal" data-bs-target="#historyShippingOrderModal"
 													data-url="{{ path("shipping_integration.order_history", {"shipping_order": item.id}) }}"
+													data-log-url="{{ path("shipping_integration.order_log", {"shipping_order": item.id}) }}"
 													data-item-code="{{ item.item_code }}">
 													{{ "Tracking history"|t }}
 												</button>

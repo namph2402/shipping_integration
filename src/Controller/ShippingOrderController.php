@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\shipping_integration\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\shipping_integration\Service\HandleShipping;
 use Drupal\shipping_integration\ShippingOrderInterface;
 use Drupal\shipping_integration\ShippingOrderService;
@@ -40,6 +41,7 @@ final class ShippingOrderController extends ControllerBase {
   public function __construct(
     protected HandleShipping $handleShipping,
     protected ShippingOrderService $orderService,
+    protected DateFormatterInterface $dateFormatter,
   ) {}
 
   /**
@@ -49,6 +51,7 @@ final class ShippingOrderController extends ControllerBase {
     return new static(
       $container->get("shipping_integration.handle_shipping"),
       $container->get("shipping_integration.order_service"),
+      $container->get("date.formatter"),
     );
   }
 
@@ -370,6 +373,51 @@ final class ShippingOrderController extends ControllerBase {
     return $this->entityTypeManager()
       ->getStorage("shipping_order")
       ->loadMultiple($ids);
+  }
+
+  /**
+   * Trả nhật ký thay đổi của một đơn hàng dưới dạng JSON cho hộp thoại.
+   *
+   * @param ShippingOrderInterface $shipping_order
+   *   Đơn hàng cần xem nhật ký.
+   *
+   * @return JsonResponse
+   *   Danh sách dòng nhật ký, mới nhất lên trước.
+   */
+  public function orderLog(ShippingOrderInterface $shipping_order): JsonResponse {
+    $storage = $this->entityTypeManager()->getStorage("shipping_order_log");
+
+    $ids = $storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition("order_id", $shipping_order->id())
+      ->sort("id", "DESC")
+      ->range(0, 200)
+      ->execute();
+
+    $rows = [];
+
+    foreach ($storage->loadMultiple($ids) as $entry) {
+      /** @var \Drupal\shipping_integration\Entity\ShippingOrderLog $entry */
+      $user = $entry->get("uid")->entity;
+
+      $rows[] = [
+        "time" => $this->dateFormatter->format((int) $entry->get("created")->value, "custom", "d/m/Y H:i:s"),
+        "source" => $entry->sourceLabel(),
+        "status_from" => (string) $entry->get("status_from")->value,
+        "status_to" => (string) $entry->get("status_to")->value,
+        "message" => (string) $entry->get("message")->value,
+        "succeeded" => (bool) $entry->get("succeeded")->value,
+        "verified" => (bool) $entry->get("verified")->value,
+        "actor" => $user !== NULL ? $user->getAccountName() : "",
+        "ip" => (string) $entry->get("ip")->value,
+      ];
+    }
+
+    return new JsonResponse([
+      "success" => TRUE,
+      "message" => $rows === [] ? (string) $this->t("No log entries yet.") : "",
+      "data" => $rows,
+    ]);
   }
 
   /**

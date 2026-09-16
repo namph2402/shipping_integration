@@ -191,3 +191,24 @@ shipping_integration.webhook:
     _access: 'TRUE'
   options:
     no_cache: TRUE
+
+# Nhật ký thay đổi của một đơn, trả JSON cho tab trong hộp thoại hành trình.
+shipping_integration.order_log:
+  path: 'shipping/order/{shipping_order}/log'
+  defaults:
+    _title: 'Nhật ký đơn hàng'
+    _controller: '\Drupal\shipping_integration\Controller\ShippingOrderController::orderLog'
+  requirements:
+    _permission: 'access shipping order'
+  options:
+    parameters:
+      shipping_order:
+        type: 'entity:shipping_order'
+
+shipping_integration.log_collection:
+  path: 'admin/content/shipping-order-log'
+  defaults:
+    _title: 'Nhật ký đơn vận chuyển'
+    _entity_list: 'shipping_order_log'
+  requirements:
+    _permission: 'access shipping order'

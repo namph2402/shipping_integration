@@ -46,3 +46,10 @@ entity.shipping_type.collection:
   description: 'List of shipping types.'
   route_name: entity.shipping_type.collection
   parent: system.admin_content
+
+shipping_integration.log_collection:
+  title: 'Nhật ký đơn vận chuyển'
+  description: 'Lịch sử thay đổi của đơn hàng và các gói tin webhook hãng đẩy về.'
+  route_name: shipping_integration.log_collection
+  parent: shipping_integration.admin
+  weight: 5

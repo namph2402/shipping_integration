@@ -10,6 +10,8 @@ dependencies:
     - field.field.taxonomy_term.shipping_integration.field_si_token
     - field.field.taxonomy_term.shipping_integration.field_si_type
     - field.field.taxonomy_term.shipping_integration.field_si_webhook_key
+    - field.field.taxonomy_term.shipping_integration.field_si_webhook_privkey
+    - field.field.taxonomy_term.shipping_integration.field_si_webhook_skip
     - field.field.taxonomy_term.shipping_integration.field_si_username
     - taxonomy.vocabulary.shipping_integration
   module:
@@ -100,5 +102,20 @@ content:
       placeholder: ''
     third_party_settings: {  }
     weight: 9
+    region: content
+  field_si_webhook_privkey:
+    type: 'string_textarea'
+    settings:
+      rows: 6
+      placeholder: ''
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_si_webhook_skip:
+    type: 'boolean_checkbox'
+    settings:
+      display_label: true
+    third_party_settings: {  }
+    weight: 11
     region: content
 hidden: {  }

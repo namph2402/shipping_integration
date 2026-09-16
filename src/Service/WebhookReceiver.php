@@ -5,20 +5,29 @@ declare(strict_types=1);
 namespace Drupal\shipping_integration\Service;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\taxonomy\TermInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Nhận và xử lý dữ liệu webhook hãng vận chuyển đẩy về.
  *
  * MyVNPost gọi webhook mỗi khi đơn hàng đổi thông tin hoặc trạng thái, gói tin
- * có dạng {data: [đơn...], sendDate, signature}. Chữ ký là chỗ duy nhất chứng
- * minh gói tin đúng là của hãng nên gói nào ký sai đều bị bỏ, không ghi gì vào
- * cơ sở dữ liệu.
+ * có dạng {data: [đơn...], sendDate, signature}. Trường signature là chỗ duy
+ * nhất chứng minh gói tin đúng là của hãng nên gói nào sai đều bị bỏ, không ghi
+ * gì vào cơ sở dữ liệu.
  *
- * Quy tắc ký của hãng: signature = RSASHA256("MYVNP" + sendDate + itemCode +
- * status), trong đó itemCode và status lấy của bưu gửi đầu tiên trong mảng
- * data, còn khoá công khai RSA 2048 lưu ở field_si_webhook_key của term kết
- * nối.
+ * Chuỗi được xác thực là "MYVNP" + sendDate + itemCode + status, trong đó
+ * itemCode và status lấy của bưu gửi đầu tiên trong mảng data.
+ *
+ * Tài liệu hãng gọi signature là RSASHA256 nhưng mã mẫu Java của chính họ lại
+ * là Cipher.getInstance("RSA/ECB/PKCS1Padding") với Cipher.ENCRYPT_MODE và
+ * khoá công khai: đó là mã hoá RSA chứ không phải ký số. Hệ quả là khoá công
+ * khai không kiểm được gói tin, phải có khoá riêng của hãng để giải mã rồi so
+ * chuỗi giải ra với chuỗi dựng lại tại chỗ. Khoá riêng lưu ở
+ * field_si_webhook_privkey của term kết nối.
+ *
+ * Khoá riêng để trống thì quay về kiểm chữ ký số bằng khoá công khai ở
+ * field_si_webhook_key, phòng khi hãng sửa lại cho đúng tài liệu.
  *
  * @see https://my-uat.vnpost.vn/static/api/webhook/send-webhook
  */
@@ -88,15 +97,28 @@ final class WebhookReceiver {
       . (string) ($first["itemCode"] ?? "")
       . (string) ($first["status"] ?? "");
 
-    if (!$this->verify($data, $signature, $this->publicKeys($first))) {
+    $connections = $this->connections($first);
+    $skipped = $this->skipping($connections);
+    $verified = FALSE;
+
+    if ($skipped !== NULL) {
+      $this->logger->warning(
+        "Webhook: BỎ QUA kiểm chữ ký theo cấu hình của kết nối @name, gói tin được ghi nhận mà không xác thực.",
+        ["@name" => $skipped]
+      );
+    }
+    elseif (!$this->verify($data, $signature, $connections)) {
       $this->logger->warning("Webhook: chữ ký không hợp lệ cho bưu gửi @code.", [
         "@code" => (string) ($first["itemCode"] ?? ""),
       ]);
 
       return $this->result(FALSE, "Chữ ký không hợp lệ", 401);
     }
+    else {
+      $verified = TRUE;
+    }
 
-    $applied = $this->handleShipping->applyWebhook($records);
+    $applied = $this->handleShipping->applyWebhook($records, $verified);
 
     $this->logger->notice("Webhook: cập nhật @updated đơn, bỏ qua @missing bưu gửi chưa có trên hệ thống.", [
       "@updated" => $applied["updated"],
@@ -113,34 +135,39 @@ final class WebhookReceiver {
   }
 
   /**
-   * Kiểm tra chữ ký với từng khoá công khai đang khai báo.
+   * Xác thực gói tin với từng kết nối đang khai báo.
+   *
+   * Ưu tiên khoá riêng: hãng mã hoá chuỗi xác thực bằng khoá công khai nên chỉ
+   * khoá riêng mới mở ra được, giải xong so nguyên văn với chuỗi dựng lại tại
+   * chỗ. Kết nối nào không khai khoá riêng thì thử tiếp cách cũ là kiểm chữ ký
+   * số bằng khoá công khai, để gói tin vẫn qua được nếu hãng sửa lại cho khớp
+   * tài liệu.
    *
    * @param string $data
-   *   Chuỗi được hãng ký.
+   *   Chuỗi xác thực dựng từ gói tin.
    * @param string $signature
-   *   Chữ ký dạng base64.
-   * @param array $keys
-   *   Danh sách khoá công khai dạng base64 hoặc PEM.
+   *   Trường signature dạng base64.
+   * @param \Drupal\taxonomy\TermInterface[] $connections
+   *   Các kết nối cần thử, kết nối khớp mã khách hàng đứng trước.
    *
    * @return bool
-   *   TRUE nếu có một khoá xác thực được chữ ký.
+   *   TRUE nếu có một kết nối xác thực được gói tin.
    */
-  private function verify(string $data, string $signature, array $keys): bool {
+  private function verify(string $data, string $signature, array $connections): bool {
     $binary = base64_decode($signature, TRUE);
 
-    if ($binary === FALSE) {
+    if ($binary === FALSE || $binary === "") {
+      $this->logger->warning("Webhook: trường signature không phải base64 hợp lệ.");
+
       return FALSE;
     }
 
-    foreach ($keys as $key) {
-      $resource = openssl_pkey_get_public($this->pem($key));
-
-      if ($resource === FALSE) {
-        $this->logger->warning("Webhook: khoá công khai khai báo sai định dạng.");
-        continue;
+    foreach ($connections as $term) {
+      if ($this->decrypts($data, $binary, $this->keyValue($term, "field_si_webhook_privkey"))) {
+        return TRUE;
       }
 
-      if (openssl_verify($data, $binary, $resource, OPENSSL_ALGO_SHA256) === 1) {
+      if ($this->signed($data, $binary, $this->keyValue($term, "field_si_webhook_key"))) {
         return TRUE;
       }
     }
@@ -149,19 +176,121 @@ final class WebhookReceiver {
   }
 
   /**
-   * Danh sách khoá công khai dùng để kiểm tra gói tin.
+   * Giải mã trường signature bằng khoá riêng rồi so với chuỗi mong đợi.
    *
-   * Ưu tiên khoá của đúng kết nối có mã khách hàng trùng với người gửi trong
-   * gói tin; không tra được thì thử mọi kết nối đang khai báo, vì một site có
-   * thể nối tới nhiều tài khoản của cùng một hãng.
+   * @param string $data
+   *   Chuỗi xác thực mong đợi.
+   * @param string $binary
+   *   Trường signature đã giải base64.
+   * @param string $key
+   *   Khoá riêng dạng base64 hoặc PEM, chuỗi rỗng nghĩa là chưa khai.
+   *
+   * @return bool
+   *   TRUE nếu giải ra đúng chuỗi mong đợi.
+   */
+  private function decrypts(string $data, string $binary, string $key): bool {
+    if ($key === "") {
+      return FALSE;
+    }
+
+    $resource = openssl_pkey_get_private($this->pem($key, "PRIVATE KEY"));
+
+    if ($resource === FALSE) {
+      $this->logger->warning("Webhook: khoá bí mật khai báo sai định dạng.");
+
+      return FALSE;
+    }
+
+    $plain = "";
+
+    if (!openssl_private_decrypt($binary, $plain, $resource, OPENSSL_PKCS1_PADDING)) {
+      return FALSE;
+    }
+
+    return hash_equals($data, $plain);
+  }
+
+  /**
+   * Kiểm chữ ký số bằng khoá công khai.
+   *
+   * @param string $data
+   *   Chuỗi được ký.
+   * @param string $binary
+   *   Chữ ký đã giải base64.
+   * @param string $key
+   *   Khoá công khai dạng base64 hoặc PEM, chuỗi rỗng nghĩa là chưa khai.
+   *
+   * @return bool
+   *   TRUE nếu chữ ký hợp lệ.
+   */
+  private function signed(string $data, string $binary, string $key): bool {
+    if ($key === "") {
+      return FALSE;
+    }
+
+    $resource = openssl_pkey_get_public($this->pem($key, "PUBLIC KEY"));
+
+    if ($resource === FALSE) {
+      $this->logger->warning("Webhook: khoá công khai khai báo sai định dạng.");
+
+      return FALSE;
+    }
+
+    return openssl_verify($data, $binary, $resource, OPENSSL_ALGO_SHA256) === 1;
+  }
+
+  /**
+   * Đọc một field khoá của term, đã cắt khoảng trắng thừa.
+   *
+   * @param \Drupal\taxonomy\TermInterface $term
+   *   Term kết nối.
+   * @param string $field
+   *   Tên field chứa khoá.
+   *
+   * @return string
+   *   Nội dung khoá, chuỗi rỗng khi term không có field hoặc để trống.
+   */
+  private function keyValue(TermInterface $term, string $field): string {
+    if (!$term->hasField($field)) {
+      return "";
+    }
+
+    return trim((string) $term->get($field)->value);
+  }
+
+  /**
+   * Tên kết nối đang bật cờ bỏ qua kiểm chữ ký, NULL nếu không có kết nối nào.
+   *
+   * @param \Drupal\taxonomy\TermInterface[] $connections
+   *   Các kết nối cần xét.
+   *
+   * @return string|null
+   *   Tên kết nối đầu tiên bật cờ, hoặc NULL.
+   */
+  private function skipping(array $connections): ?string {
+    foreach ($connections as $term) {
+      if ($term->hasField("field_si_webhook_skip") && !empty($term->get("field_si_webhook_skip")->value)) {
+        return (string) $term->label();
+      }
+    }
+
+    return NULL;
+  }
+
+  /**
+   * Các kết nối có thể đã gửi gói tin này, sắp theo thứ tự ưu tiên.
+   *
+   * Ưu tiên kết nối có mã khách hàng trùng với người gửi trong gói tin; không
+   * tra được thì thử mọi kết nối đang khai báo, vì một site có thể nối tới
+   * nhiều tài khoản của cùng một hãng.
    *
    * @param array $record
    *   Bản ghi đơn hàng đầu tiên trong gói tin.
    *
-   * @return array
-   *   Danh sách khoá công khai, đã bỏ khoá rỗng.
+   * @return \Drupal\taxonomy\TermInterface[]
+   *   Danh sách term kết nối.
    */
-  private function publicKeys(array $record): array {
+  private function connections(array $record): array {
     $terms = $this->entityTypeManager
       ->getStorage("taxonomy_term")
       ->loadByProperties(["vid" => GetConfigShipping::VOCABULARY]);
@@ -171,48 +300,40 @@ final class WebhookReceiver {
     $others = [];
 
     foreach ($terms as $term) {
-      if (!$term->hasField("field_si_webhook_key")) {
-        continue;
-      }
-
-      $key = trim((string) $term->get("field_si_webhook_key")->value);
-
-      if ($key === "") {
-        continue;
-      }
-
       $code = $term->hasField("field_si_code") ? (string) $term->get("field_si_code")->value : "";
 
       if ($sender_code !== "" && $code === $sender_code) {
-        $matched[] = $key;
+        $matched[] = $term;
         continue;
       }
 
-      $others[] = $key;
+      $others[] = $term;
     }
 
-    return array_values(array_unique([...$matched, ...$others]));
+    return [...$matched, ...$others];
   }
 
   /**
-   * Bọc khoá công khai dạng base64 thành PEM cho OpenSSL đọc được.
+   * Bọc khoá dạng base64 thành PEM cho OpenSSL đọc được.
    *
    * @param string $key
-   *   Khoá công khai, có thể đã ở dạng PEM sẵn.
+   *   Khoá, có thể đã ở dạng PEM sẵn.
+   * @param string $label
+   *   Nhãn khối PEM, "PUBLIC KEY" hoặc "PRIVATE KEY".
    *
    * @return string
    *   Khoá dạng PEM.
    */
-  private function pem(string $key): string {
+  private function pem(string $key, string $label): string {
     $key = trim($key);
 
     if (str_contains($key, "-----BEGIN")) {
       return $key;
     }
 
-    return "-----BEGIN PUBLIC KEY-----\n"
+    return "-----BEGIN {$label}-----\n"
       . chunk_split(preg_replace("/\s+/", "", $key), 64, "\n")
-      . "-----END PUBLIC KEY-----\n";
+      . "-----END {$label}-----\n";
   }
 
   /**
