@@ -58,6 +58,11 @@ class SynchronizeAddresses {
 
       $provider = $this->provider($config);
 
+      // Tải và lưu toàn bộ danh mục mất vài phút khi mạng chậm.
+      if (function_exists("set_time_limit")) {
+        @set_time_limit(900);
+      }
+
       try {
         $data = $provider->synchronizeAddresses($config);
       }

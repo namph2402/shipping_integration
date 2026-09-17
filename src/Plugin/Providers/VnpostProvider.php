@@ -90,6 +90,21 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   private const LONG_TIMEOUT = 120;
 
   /**
+   * Timeout (giây) cho các API tải toàn bộ danh mục địa chỉ (phản hồi lớn).
+   */
+  private const CATALOG_TIMEOUT = 300;
+
+  /**
+   * Timeout (giây) cho giai đoạn bắt tay kết nối.
+   */
+  private const CONNECT_TIMEOUT = 15;
+
+  /**
+   * Huỷ request khi tốc độ dưới 1 byte/giây liên tục trong số giây này.
+   */
+  private const STALL_TIMEOUT = 60;
+
+  /**
    * {@inheritdoc}
    */
   public function __construct(
@@ -154,7 +169,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
     $data = [];
     $district_provinces = [];
 
-    foreach ($this->request($config, "/getAllProvince", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
+    foreach ($this->request($config, "/getAllProvince", [], NULL, "GET", TRUE, self::CATALOG_TIMEOUT) ?: [] as $row) {
       $data[] = [
         "bundle" => "province",
         "is_new" => 0,
@@ -165,7 +180,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       ];
     }
 
-    foreach ($this->request($config, "/getAllDistrict", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
+    foreach ($this->request($config, "/getAllDistrict", [], NULL, "GET", TRUE, self::CATALOG_TIMEOUT) ?: [] as $row) {
       $code = (string) ($row["districtCode"] ?? "");
       $province_code = (string) ($row["provinceCode"] ?? "");
       $district_provinces[$code] = $province_code;
@@ -180,7 +195,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       ];
     }
 
-    foreach ($this->request($config, "/getAllCommune", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
+    foreach ($this->request($config, "/getAllCommune", [], NULL, "GET", TRUE, self::CATALOG_TIMEOUT) ?: [] as $row) {
       $district_code = (string) ($row["districtCode"] ?? "");
 
       $data[] = [
@@ -193,7 +208,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       ];
     }
 
-    foreach ($this->request($config, "/getNewProvinceAll", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
+    foreach ($this->request($config, "/getNewProvinceAll", [], NULL, "GET", TRUE, self::CATALOG_TIMEOUT) ?: [] as $row) {
       $data[] = [
         "bundle" => "province",
         "is_new" => 1,
@@ -204,7 +219,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       ];
     }
 
-    foreach ($this->request($config, "/getNewCommuneAll", [], NULL, "GET", TRUE, self::LONG_TIMEOUT) ?: [] as $row) {
+    foreach ($this->request($config, "/getNewCommuneAll", [], NULL, "GET", TRUE, self::CATALOG_TIMEOUT) ?: [] as $row) {
       $data[] = [
         "bundle" => "commune",
         "is_new" => 1,
@@ -957,7 +972,16 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
 
     $options = [
       "headers" => ["Content-Type" => "application/json"] + $headers,
+      "connect_timeout" => min(self::CONNECT_TIMEOUT, $timeout),
+      // Chỉ huỷ khi đường truyền đứng hẳn, không cắt khi mạng chậm nhưng
+      // vẫn đang nhận dữ liệu.
+      "curl" => [
+        CURLOPT_LOW_SPEED_LIMIT => 1,
+        CURLOPT_LOW_SPEED_TIME => min(self::STALL_TIMEOUT, $timeout),
+      ],
       "timeout" => $timeout,
+      // Gửi Accept-Encoding: gzip và tự giải nén, giảm mạnh dung lượng tải.
+      "decode_content" => "gzip",
       "http_errors" => FALSE,
     ];
 
