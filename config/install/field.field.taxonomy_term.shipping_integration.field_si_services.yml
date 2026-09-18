@@ -10,8 +10,8 @@ id: taxonomy_term.shipping_integration.field_si_services
 field_name: field_si_services
 entity_type: taxonomy_term
 bundle: shipping_integration
-label: 'Dịch vụ theo hợp đồng'
-description: 'Tích các sản phẩm dịch vụ tài khoản được dùng theo hợp đồng với hãng. Để trống thì form tạo đơn hiện mọi dịch vụ trong danh mục.'
+label: 'Dịch vụ (SPDV) theo hợp đồng'
+description: 'Tích các sản phẩm dịch vụ tài khoản được dùng theo hợp đồng với VNPost. Form tạo đơn chỉ cho chọn một trong các dịch vụ đã tích; dịch vụ cộng thêm hiện theo dịch vụ được chọn.'
 required: false
 translatable: false
 default_value: {  }

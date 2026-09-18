@@ -2,7 +2,6 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.field.taxonomy_term.shipping_integration.field_si_addons
     - field.field.taxonomy_term.shipping_integration.field_si_code
     - field.field.taxonomy_term.shipping_integration.field_si_contract
     - field.field.taxonomy_term.shipping_integration.field_si_expiration
@@ -31,13 +30,6 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 0
-    region: content
-  field_si_addons:
-    type: list_default
-    label: above
-    settings: {  }
-    third_party_settings: {  }
-    weight: 7
     region: content
   field_si_code:
     type: string

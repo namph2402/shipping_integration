@@ -27,9 +27,9 @@ viết thêm một plugin, không phải sửa gì ở tầng entity hay giao di
    - **Username / Password**: tài khoản MyVNPost.
    - **Mã khách hàng**: mã KH CMS VNPost cấp (ví dụ `T000180585`).
    - **Mã hợp đồng**: để trống nếu không có.
-   - **Dịch vụ theo hợp đồng** (`field_si_services`) và **Dịch vụ GTGT theo
-     hợp đồng** (`field_si_addons`): tích đúng những gì hợp đồng với VNPost
-     cho dùng. Để trống một field nghĩa là không giới hạn ở tầng đó.
+   - **Dịch vụ (SPDV) theo hợp đồng** (`field_si_services`): tích các sản
+     phẩm dịch vụ hợp đồng với VNPost cho dùng. Form tạo đơn chỉ cho chọn một
+     trong các dịch vụ đã tích; chưa tích dịch vụ nào thì không tạo đơn được.
    Lưu term là module tự gọi `/GetAccessToken` và ghi token vào `field_si_token`.
 4. Đồng bộ danh mục địa chỉ: vào `/admin/content/shipping-address` và bấm nút
    **Đồng bộ địa chỉ: {tên term}** ở đầu trang (mỗi term cấu hình kết nối có
@@ -105,12 +105,18 @@ liệu vì hãng không có API tra cứu, gồm ba tầng:
    `PROP1:giá trị;PROP2:null` — thuộc tính không khai vẫn phải có mặt với giá
    trị `null` theo đúng tài liệu.
 
-Trên form, ô **Dịch vụ** chỉ liệt kê dịch vụ có trong hợp đồng của kết nối
-đang chọn; chọn dịch vụ xong thì khối bên dưới hiện đúng các dịch vụ GTGT mà
-dịch vụ đó cho phép *và* hợp đồng cho dùng. Mỗi dịch vụ GTGT là một ô tích, tích
-vào mới hiện ô nhập thuộc tính; thuộc tính bắt buộc (số tiền COD, giá trị khai
-giá, số/ngày hoá đơn, phí hủy đơn) được kiểm tra khi lưu. Đổi kết nối hoặc đổi
-dịch vụ thì cả thẻ dịch vụ dựng lại qua AJAX.
+Quan hệ giữa ba tầng đi theo mã, đúng như ba bảng danh mục của hãng: mã SPDV
+→ các mã dịch vụ GTGT của SPDV đó → các mã thuộc tính của từng dịch vụ GTGT.
+Form khai đơn đi theo đúng chiều đó, dựng như màn khai đơn của MyVNPost:
+
+1. Ô **Tên SPDV** chỉ liệt kê các dịch vụ đã tích ở term kết nối đang chọn.
+2. Chọn SPDV xong thì bảng **Dịch vụ cộng thêm** hiện các dịch vụ GTGT của
+   đúng SPDV đó, mỗi dòng một ô tích (dịch vụ nhóm yêu cầu thêm nằm chung bảng).
+3. Tích dòng nào thì cột thuộc tính của dòng đó mới hiện ô nhập. Thuộc tính
+   bắt buộc (số tiền COD, giá trị khai giá, số/ngày hoá đơn, phí hủy đơn) được
+   kiểm tra khi lưu.
+
+Đổi kết nối hoặc đổi SPDV thì cả thẻ dịch vụ dựng lại qua AJAX.
 
 Lựa chọn lưu vào `field_so_addons` dạng JSON `{mã GTGT: {mã thuộc tính: giá
 trị}}`. COD (`GTG021`/`PROP0018`) và khai giá (`GTG008`/`PROP0026`) vẫn được
@@ -120,8 +126,8 @@ field đó; đơn kéo về từ hãng lấy dịch vụ GTGT từ `addonService
 `additionRequest` trong bản ghi.
 
 Hãng mở thêm dịch vụ hay thuộc tính thì chỉ cần sửa các hằng trong
-`VnpostCatalog` — `field_so_service` và hai field hợp đồng đều đọc danh sách từ
-đó qua `allowed_values_function`.
+`VnpostCatalog` — `field_so_service` và `field_si_services` đều đọc danh sách
+từ đó qua `allowed_values_function`.
 
 ## Ánh xạ sang API MyVNPost
 

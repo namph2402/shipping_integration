@@ -142,9 +142,7 @@ class GetConfigShipping {
       "shipping_code" => $this->value($config_entity, "field_si_code"),
       "shipping_contract" => $this->value($config_entity, "field_si_contract"),
       "shipping_payment" => $this->value($config_entity, "field_si_type_payment") ?: self::PAYMENT_DEFAULT,
-      // Dịch vụ và dịch vụ GTGT tích theo hợp đồng, rỗng là không giới hạn.
       "shipping_services" => self::values($config_entity, "field_si_services"),
-      "shipping_addons" => self::values($config_entity, "field_si_addons"),
       "shipping_token" => $this->value($config_entity, "field_si_token"),
       "shipping_expiration" => $this->value($config_entity, "field_si_expiration"),
     ];

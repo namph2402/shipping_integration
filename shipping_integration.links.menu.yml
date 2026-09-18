@@ -11,45 +11,78 @@ shipping_integration.order_list:
   route_name: shipping_integration.order_list
   parent: shipping_integration.admin
 
-entity.shipping_address_type.collection:
-  title: 'Shipping address types'
-  description: 'Manage and CRUD actions on Shipping address type.'
-  parent: system.admin_structure
-  route_name: entity.shipping_address_type.collection
-
-entity.shipping_address.collection:
-  title: 'Shipping addresses'
-  description: 'List of shipping addresses.'
-  route_name: entity.shipping_address.collection
-  parent: system.admin_content
-
-entity.shipping_order_type.collection:
-  title: 'Shipping order types'
-  description: 'Manage and CRUD actions on Shipping order type.'
-  parent: system.admin_structure
-  route_name: entity.shipping_order_type.collection
-
-entity.shipping_order.collection:
-  title: 'Shipping orders'
-  description: 'List of shipping orders.'
-  route_name: entity.shipping_order.collection
-  parent: system.admin_content
-
-entity.shipping_type.settings:
-  title: 'Shipping type'
-  description: 'Configure a Shipping type entity type.'
-  route_name: entity.shipping_type.settings
-  parent: system.admin_structure
-
-entity.shipping_type.collection:
-  title: 'Shipping types'
-  description: 'List of shipping types.'
-  route_name: entity.shipping_type.collection
-  parent: system.admin_content
-
 shipping_integration.log_collection:
   title: 'Nhật ký đơn vận chuyển'
   description: 'Lịch sử thay đổi của đơn hàng và các gói tin webhook hãng đẩy về.'
   route_name: shipping_integration.log_collection
   parent: shipping_integration.admin
   weight: 5
+
+shipping_integration.admin_config:
+  title: 'Vận chuyển'
+  description: 'Hãng vận chuyển, địa chỉ và đơn vận chuyển.'
+  route_name: shipping_integration.admin_config
+  parent: system.admin_structure
+
+shipping_integration.admin_config.carrier:
+  title: 'Hãng vận chuyển'
+  description: 'Danh sách hãng và cấu hình trường, form, display.'
+  route_name: shipping_integration.admin_config.carrier
+  parent: shipping_integration.admin_config
+  weight: 0
+
+entity.shipping_type.collection:
+  title: 'Nội dung'
+  description: 'Danh sách hãng vận chuyển.'
+  route_name: entity.shipping_type.collection
+  parent: shipping_integration.admin_config.carrier
+  weight: 0
+
+entity.shipping_type.settings:
+  title: 'Cấu hình'
+  description: 'Cấu hình trường, form, display.'
+  route_name: entity.shipping_type.settings
+  parent: shipping_integration.admin_config.carrier
+  weight: 1
+
+shipping_integration.admin_config.address:
+  title: 'Địa chỉ vận chuyển'
+  description: 'Danh sách địa chỉ và cấu hình bundle, trường, form, display.'
+  route_name: shipping_integration.admin_config.address
+  parent: shipping_integration.admin_config
+  weight: 1
+
+entity.shipping_address.collection:
+  title: 'Nội dung'
+  description: 'Danh sách địa chỉ vận chuyển.'
+  route_name: entity.shipping_address.collection
+  parent: shipping_integration.admin_config.address
+  weight: 0
+
+entity.shipping_address_type.collection:
+  title: 'Cấu hình'
+  description: 'Cấu hình bundle, trường, form, display.'
+  route_name: entity.shipping_address_type.collection
+  parent: shipping_integration.admin_config.address
+  weight: 1
+
+shipping_integration.admin_config.order:
+  title: 'Đơn vận chuyển'
+  description: 'Danh sách đơn và cấu hình trường, form, display.'
+  route_name: shipping_integration.admin_config.order
+  parent: shipping_integration.admin_config
+  weight: 2
+
+entity.shipping_order.collection:
+  title: 'Nội dung'
+  description: 'Danh sách đơn vận chuyển.'
+  route_name: entity.shipping_order.collection
+  parent: shipping_integration.admin_config.order
+  weight: 0
+
+entity.shipping_order_type.collection:
+  title: 'Cấu hình'
+  description: 'Cấu hình trường, form, display.'
+  route_name: entity.shipping_order_type.collection
+  parent: shipping_integration.admin_config.order
+  weight: 1

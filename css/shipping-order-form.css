@@ -134,6 +134,60 @@
   margin: 0;
 }
 
-.shipping-order-form .shipping-addon + .shipping-addon {
-  border-top: 1px dashed #dee2e6;
+/* Bảng dịch vụ cộng thêm, dựng như màn khai đơn của MyVNPost. */
+.shipping-order-form .shipping-addons {
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+
+.shipping-order-form .shipping-addon-table {
+  caption-side: top;
+}
+
+.shipping-order-form .shipping-addon-table caption {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: inherit;
+  background-color: #fff8e1;
+}
+
+.shipping-order-form .shipping-addon-table .shipping-addon-check {
+  width: 2.5rem;
+  text-align: center;
+}
+
+.shipping-order-form .shipping-addon-table .shipping-addon-name {
+  width: 35%;
+}
+
+.shipping-order-form .shipping-addon-table .form-item {
+  margin: 0;
+}
+
+.shipping-order-form .shipping-addon-props {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shipping-order-form .shipping-addon-prop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shipping-order-form .shipping-addon-prop > label {
+  flex: 0 0 50%;
+  margin: 0;
+}
+
+.shipping-order-form .shipping-addon-prop > input:not([type="checkbox"]) {
+  flex: 1 1 auto;
+  min-width: 0;
 }

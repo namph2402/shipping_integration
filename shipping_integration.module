@@ -52,13 +52,6 @@ function shipping_integration_vnpost_services(FieldStorageDefinitionInterface $d
 }
 
 /**
- * Danh sách giá trị của field dịch vụ GTGT khai theo hợp đồng.
- */
-function shipping_integration_vnpost_addons(FieldStorageDefinitionInterface $definition, ?FieldableEntityInterface $entity = NULL, bool &$cacheable = TRUE): array {
-  return VnpostCatalog::addonOptions();
-}
-
-/**
  * Prepares variables for shipping address templates.
  *
  * Default template: shipping-address.html.twig.

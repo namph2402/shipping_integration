@@ -152,7 +152,6 @@ shipping_integration.order_download_label:
       shipping_order:
         type: 'entity:shipping_order'
 
-# Cấu hình kết nối.
 shipping_integration.synchronize_addresses:
   path: 'shipping/config/{taxonomy_term}/synchronize-addresses'
   defaults:
@@ -178,9 +177,6 @@ shipping_integration.refresh_token:
       taxonomy_term:
         type: 'entity:taxonomy_term'
 
-# Hãng gọi về mỗi khi đơn đổi thông tin hoặc trạng thái. Không đặt điều kiện
-# quyền vì hãng không gửi kèm tài khoản; chữ ký RSA trong gói tin mới là thứ
-# xác thực, và WebhookReceiver kiểm tra nó trước khi ghi bất cứ thứ gì.
 shipping_integration.webhook:
   path: 'shipping/webhook'
   defaults:
@@ -192,7 +188,6 @@ shipping_integration.webhook:
   options:
     no_cache: TRUE
 
-# Nhật ký thay đổi của một đơn, trả JSON cho tab trong hộp thoại hành trình.
 shipping_integration.order_log:
   path: 'shipping/order/{shipping_order}/log'
   defaults:
@@ -212,3 +207,35 @@ shipping_integration.log_collection:
     _entity_list: 'shipping_order_log'
   requirements:
     _permission: 'access shipping order'
+
+shipping_integration.admin_config:
+  path: 'admin/config/shipping'
+  defaults:
+    _title: 'Vận chuyển'
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+  requirements:
+    _permission: 'access administration pages'
+
+shipping_integration.admin_config.carrier:
+  path: 'admin/config/shipping/carrier'
+  defaults:
+    _title: 'Hãng vận chuyển'
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+  requirements:
+    _permission: 'access administration pages'
+
+shipping_integration.admin_config.address:
+  path: 'admin/config/shipping/address'
+  defaults:
+    _title: 'Địa chỉ vận chuyển'
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+  requirements:
+    _permission: 'access administration pages'
+
+shipping_integration.admin_config.order:
+  path: 'admin/config/shipping/order'
+  defaults:
+    _title: 'Đơn vận chuyển'
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+  requirements:
+    _permission: 'access administration pages'

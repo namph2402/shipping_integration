@@ -170,40 +170,19 @@ final class VnpostCatalog {
   /**
    * Danh sách chọn sản phẩm dịch vụ.
    *
-   * @param string[] $allowed
-   *   Mã dịch vụ được phép theo hợp đồng, rỗng nghĩa là không giới hạn.
+   * @param string[]|null $allowed
+   *   Mã dịch vụ cần lấy, NULL là lấy cả danh mục.
    *
    * @return array
    *   Mảng mã => nhãn.
    */
-  public static function serviceOptions(array $allowed = []): array {
+  public static function serviceOptions(?array $allowed = NULL): array {
     $options = [];
 
     foreach (self::SERVICES as $code => [$name, $group]) {
-      if ($allowed === [] || in_array($code, $allowed, TRUE)) {
+      if ($allowed === NULL || in_array($code, $allowed, TRUE)) {
         $options[$code] = "{$code} - {$name} ({$group})";
       }
-    }
-
-    return $options;
-  }
-
-  /**
-   * Danh sách chọn dịch vụ GTGT, dùng cho field khai theo hợp đồng.
-   *
-   * @return array
-   *   Mảng mã => nhãn kèm nhóm.
-   */
-  public static function addonOptions(): array {
-    $groups = [
-      self::GROUP_ADDON => "Dịch vụ cộng thêm",
-      self::GROUP_REQUEST => "Yêu cầu thêm",
-    ];
-
-    $options = [];
-
-    foreach (self::ADDONS as $code => $addon) {
-      $options[$code] = "{$code} - {$addon['label']} ({$groups[$addon['group']]})";
     }
 
     return $options;
@@ -214,17 +193,15 @@ final class VnpostCatalog {
    *
    * @param string $service
    *   Mã sản phẩm dịch vụ.
-   * @param string[] $allowed
-   *   Mã dịch vụ GTGT được phép theo hợp đồng, rỗng nghĩa là không giới hạn.
    *
    * @return array
    *   Mảng mã => định nghĩa dịch vụ GTGT, theo thứ tự danh mục.
    */
-  public static function addonsFor(string $service, array $allowed = []): array {
+  public static function addonsFor(string $service): array {
     $addons = [];
 
     foreach (self::SERVICE_ADDONS[$service] ?? [] as $code) {
-      if (isset(self::ADDONS[$code]) && ($allowed === [] || in_array($code, $allowed, TRUE))) {
+      if (isset(self::ADDONS[$code])) {
         $addons[$code] = self::ADDONS[$code];
       }
     }

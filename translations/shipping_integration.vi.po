@@ -761,14 +761,17 @@ msgstr "Giá trị này đang bị VN-Post che, hãy nhập lại đầy đủ t
 msgid "Choose a service to see its addon services."
 msgstr "Chọn dịch vụ để hiện các dịch vụ cộng thêm đi kèm."
 
-msgid "This service has no addon service available under the contract of the connection."
-msgstr "Dịch vụ này không có dịch vụ GTGT nào được dùng theo hợp đồng của kết nối."
+msgid "Choose service"
+msgstr "Chọn dịch vụ"
 
-msgid "Additional charge requests"
-msgstr "Yêu cầu thêm"
+msgid "This service has no addon service."
+msgstr "Dịch vụ này không có dịch vụ cộng thêm."
 
-msgid "The service @code is not in the contract of this connection."
-msgstr "Dịch vụ @code không nằm trong hợp đồng của kết nối này."
+msgid "No service is ticked on this connection. Tick the contracted services on the connection configuration first."
+msgstr "Kết nối này chưa tích dịch vụ nào. Hãy tích các dịch vụ theo hợp đồng trong cấu hình kết nối trước."
 
-msgid "Enter @prop for the addon service @addon."
-msgstr "Nhập @prop cho dịch vụ GTGT @addon."
+msgid "The service @code is not ticked on this connection."
+msgstr "Dịch vụ @code không được tích ở kết nối này."
+
+msgid "@prop of the addon service @addon must not be empty."
+msgstr "Thông tin @prop của GTGT @addon không được để trống."

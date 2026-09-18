@@ -321,10 +321,11 @@ final class ShippingOrderForm extends ContentEntityForm {
   }
 
   /**
-   * Dựng khối chọn dịch vụ và dịch vụ GTGT.
+   * Dựng khối chọn dịch vụ và bảng dịch vụ cộng thêm.
    *
-   * Danh sách dịch vụ lọc theo hợp đồng của kết nối đang chọn; dịch vụ GTGT
-   * là phần giao giữa những gì dịch vụ chính cho phép và hợp đồng cho dùng.
+   * Dựng theo màn khai đơn của MyVNPost: chọn một SPDV trong số dịch vụ đã
+   * tích ở term kết nối, bảng bên dưới liệt kê dịch vụ cộng thêm của đúng SPDV
+   * đó, tích dòng nào thì dòng đó mới hiện ô nhập thuộc tính.
    *
    * @param array $form
    *   Mảng form đang dựng.
@@ -332,19 +333,18 @@ final class ShippingOrderForm extends ContentEntityForm {
    *   Trạng thái form.
    */
   private function buildServiceCard(array &$form, FormStateInterface $form_state): void {
-    $card = $this->card($this->t("Service"));
+    $card = $this->card($this->t("Choose service"));
     $card["#attributes"]["id"] = "shipping-service-card";
 
-    $contract = $this->contract($form_state);
     $service = $this->currentValue($form_state, "field_so_service");
-    $options = VnpostCatalog::serviceOptions($contract["services"]);
+    $options = VnpostCatalog::serviceOptions($this->contractServices($form_state));
 
-    // Đơn cũ đang giữ dịch vụ ngoài hợp đồng (hoặc ngoài danh mục) vẫn phải
-    // mở ra sửa được, nên giữ lại lựa chọn đó.
+    // Đơn cũ đang giữ dịch vụ không còn tích ở kết nối vẫn phải mở ra sửa
+    // được, nên giữ lại lựa chọn đó.
     $stored = $this->fieldValue("field_so_service");
 
     if ($stored !== "" && !isset($options[$stored])) {
-      $options[$stored] = VnpostCatalog::serviceOptions()[$stored] ?? $stored;
+      $options[$stored] = VnpostCatalog::serviceOptions([$stored])[$stored] ?? $stored;
     }
 
     if (!isset($options[$service])) {
@@ -366,6 +366,11 @@ final class ShippingOrderForm extends ContentEntityForm {
         "event" => "change",
       ],
     ];
+
+    if ($options === [] && $this->currentValue($form_state, "field_so_config") !== "") {
+      $card["body"]["field_so_service"]["#description"] = $this->t("No service is ticked on this connection. Tick the contracted services on the connection configuration first.");
+    }
+
     $card["body"]["field_so_vehicle"] = $this->tune($form, "field_so_vehicle", [
       "#title" => $this->t("Vehicle"),
       "#wrapper_attributes" => ["class" => ["col-md-4"]],
@@ -388,79 +393,65 @@ final class ShippingOrderForm extends ContentEntityForm {
     ];
 
     $card["body"]["quotes"] = $this->quoteTable($form_state);
-    $card["body"]["addons"] = $this->addonGroup($form_state, $service, $contract["addons"]);
+    $card["body"]["addons"] = $this->addonTable($form_state, $service);
 
     NestedArray::setValue($form, self::SERVICE_PATH, $this->ordered($card));
   }
 
   /**
-   * Dựng khối tích chọn dịch vụ GTGT của dịch vụ đang chọn.
+   * Dựng bảng dịch vụ cộng thêm của SPDV đang chọn.
    *
-   * Mỗi dịch vụ GTGT là một ô tích, thuộc tính của nó chỉ hiện khi đã tích.
-   * Chia hai nhóm đúng như payload của hãng: dịch vụ cộng thêm và yêu cầu thêm.
+   * Mỗi dòng là một dịch vụ GTGT: ô tích, tên, và cột thuộc tính chỉ hiện khi
+   * dòng đã được tích. Dịch vụ nhóm "yêu cầu thêm" (GTG070, GTG071) nằm chung
+   * bảng như màn của hãng, chỉ khác chỗ plugin gửi chúng trong additionRequest.
    *
    * @param FormStateInterface $form_state
    *   Trạng thái form.
    * @param string $service
-   *   Mã dịch vụ đang chọn.
-   * @param string[] $allowed
-   *   Mã dịch vụ GTGT được phép theo hợp đồng, rỗng là không giới hạn.
+   *   Mã SPDV đang chọn.
    *
    * @return array
-   *   Phần form của khối dịch vụ GTGT.
+   *   Phần form của bảng dịch vụ cộng thêm.
    */
-  private function addonGroup(FormStateInterface $form_state, string $service, array $allowed): array {
-    $group = [
+  private function addonTable(FormStateInterface $form_state, string $service): array {
+    $wrapper = [
       "#type" => "container",
-      "#tree" => TRUE,
-      "#parents" => ["addons"],
-      "#attributes" => ["class" => ["col-12", "row", "g-2", "m-0", "p-0", "shipping-addons"]],
+      "#attributes" => ["class" => ["col-12", "shipping-addons"]],
     ];
 
     if ($service === "") {
-      $group["empty"] = $this->hint($this->t("Choose a service to see its addon services."));
+      $wrapper["empty"] = $this->hint($this->t("Choose a service to see its addon services."));
 
-      return $group;
+      return $wrapper;
     }
 
-    $addons = VnpostCatalog::addonsFor($service, $allowed);
+    $addons = VnpostCatalog::addonsFor($service);
 
     if ($addons === []) {
-      $group["empty"] = $this->hint($this->t("This service has no addon service available under the contract of the connection."));
+      $wrapper["empty"] = $this->hint($this->t("This service has no addon service."));
 
-      return $group;
+      return $wrapper;
     }
 
     $current = $this->currentAddons($form_state);
-    $headers = [
-      VnpostCatalog::GROUP_ADDON => $this->t("Addon services"),
-      VnpostCatalog::GROUP_REQUEST => $this->t("Additional charge requests"),
+
+    $wrapper["table"] = [
+      "#type" => "table",
+      "#tree" => TRUE,
+      "#parents" => ["addons"],
+      "#caption" => $this->t("Addon services"),
+      "#attributes" => ["class" => ["table", "table-sm", "table-bordered", "align-middle", "mb-0", "shipping-addon-table"]],
     ];
 
-    foreach ($headers as $key => $header) {
-      $codes = array_keys(array_filter($addons, static fn (array $addon): bool => $addon["group"] === $key));
-
-      if ($codes === []) {
-        continue;
-      }
-
-      $group["header_" . $key] = [
-        "#type" => "html_tag",
-        "#tag" => "div",
-        "#attributes" => ["class" => ["col-12", "shipping-subheader"]],
-        "#value" => $header,
-      ];
-
-      foreach ($codes as $code) {
-        $group[$code] = $this->addonElement($code, $addons[$code], $current[$code] ?? NULL);
-      }
+    foreach ($addons as $code => $addon) {
+      $wrapper["table"][$code] = $this->addonRow($code, $addon, $current[$code] ?? NULL);
     }
 
-    return $group;
+    return $wrapper;
   }
 
   /**
-   * Dựng ô tích và các ô thuộc tính của một dịch vụ GTGT.
+   * Dựng một dòng của bảng dịch vụ cộng thêm.
    *
    * @param string $code
    *   Mã dịch vụ GTGT.
@@ -470,22 +461,33 @@ final class ShippingOrderForm extends ContentEntityForm {
    *   Thuộc tính đang khai, NULL khi dịch vụ chưa được tích.
    *
    * @return array
-   *   Phần form của dịch vụ GTGT.
+   *   Các ô của dòng: tích chọn, tên dịch vụ, thuộc tính.
    */
-  private function addonElement(string $code, array $addon, ?array $values): array {
-    $element = [
-      "#type" => "container",
-      "#attributes" => ["class" => ["col-12", "row", "g-2", "m-0", "p-0", "shipping-addon"]],
+  private function addonRow(string $code, array $addon, ?array $values): array {
+    $row = [
       "enabled" => [
         "#type" => "checkbox",
-        "#title" => $code . " - " . $addon["label"],
+        "#title" => $addon["label"],
+        "#title_display" => "invisible",
         "#default_value" => $values !== NULL,
-        "#wrapper_attributes" => ["class" => ["col-12", "shipping-checkbox-field"]],
+        "#wrapper_attributes" => ["class" => ["shipping-addon-check"]],
+      ],
+      "name" => [
+        "#type" => "html_tag",
+        "#tag" => "span",
+        "#attributes" => ["title" => $code],
+        "#value" => $addon["label"],
+        "#wrapper_attributes" => ["class" => ["shipping-addon-name"]],
+      ],
+      "props" => [
+        "#type" => "container",
+        "#attributes" => ["class" => ["shipping-addon-props"]],
+        "#wrapper_attributes" => ["class" => ["shipping-addon-props-cell"]],
       ],
     ];
 
     if ($code === VnpostCatalog::ADDON_COD) {
-      $element["enabled"]["#attributes"]["class"][] = "shipping-cod-toggle";
+      $row["enabled"]["#attributes"]["class"][] = "shipping-cod-toggle";
     }
 
     $visible = [
@@ -515,7 +517,6 @@ final class ShippingOrderForm extends ContentEntityForm {
         "flag" => [
           "#type" => "checkbox",
           "#default_value" => $value === "1",
-          "#wrapper_attributes" => ["class" => ["col-md-6", "ps-4", "shipping-checkbox-field"]],
         ],
         default => [
           "#type" => "textfield",
@@ -523,7 +524,7 @@ final class ShippingOrderForm extends ContentEntityForm {
         ],
       } + [
         "#title" => $definition["label"],
-        "#wrapper_attributes" => ["class" => ["col-md-6", "ps-4"]],
+        "#wrapper_attributes" => ["class" => ["shipping-addon-prop"]],
         "#states" => $visible,
       ];
 
@@ -537,10 +538,10 @@ final class ShippingOrderForm extends ContentEntityForm {
         $input["#attributes"]["class"][] = "shipping-cod-input";
       }
 
-      $element[$prop] = $input;
+      $row["props"][$prop] = $input;
     }
 
-    return $element;
+    return $row;
   }
 
   /**
@@ -1267,20 +1268,19 @@ final class ShippingOrderForm extends ContentEntityForm {
   }
 
   /**
-   * Kiểm tra dịch vụ và dịch vụ GTGT đang khai.
+   * Kiểm tra dịch vụ và dịch vụ cộng thêm đang khai.
    *
    * @param FormStateInterface $form_state
    *   Trạng thái form.
    */
   private function validateService(FormStateInterface $form_state): void {
     $service = (string) $form_state->getValue("field_so_service", "");
-    $contract = $this->contract($form_state);
 
     // Đơn cũ giữ nguyên dịch vụ đang có thì cho qua, chỉ chặn khi chọn mới
-    // một dịch vụ ngoài hợp đồng.
-    if ($service !== "" && $contract["services"] !== [] && !in_array($service, $contract["services"], TRUE)
-      && $service !== $this->fieldValue("field_so_service")) {
-      $form_state->setErrorByName("field_so_service", $this->t("The service @code is not in the contract of this connection.", ["@code" => $service]));
+    // một dịch vụ không được tích ở kết nối.
+    if ($service !== "" && $service !== $this->fieldValue("field_so_service")
+      && !in_array($service, $this->contractServices($form_state), TRUE)) {
+      $form_state->setErrorByName("field_so_service", $this->t("The service @code is not ticked on this connection.", ["@code" => $service]));
     }
 
     foreach ($this->submittedAddons($form_state) as $code => $values) {
@@ -1293,9 +1293,9 @@ final class ShippingOrderForm extends ContentEntityForm {
         $missing = $definition["type"] === "number" ? (float) $value <= 0 : $value === "";
 
         if ($missing) {
-          $form_state->setErrorByName("addons][{$code}][{$prop}", $this->t("Enter @prop for the addon service @addon.", [
+          $form_state->setErrorByName("addons][{$code}][props][{$prop}", $this->t("@prop of the addon service @addon must not be empty.", [
             "@prop" => $definition["label"],
-            "@addon" => $code . " - " . VnpostCatalog::ADDONS[$code]["label"],
+            "@addon" => VnpostCatalog::ADDONS[$code]["label"],
           ]));
         }
       }
@@ -1303,26 +1303,21 @@ final class ShippingOrderForm extends ContentEntityForm {
   }
 
   /**
-   * Dịch vụ và dịch vụ GTGT được phép theo hợp đồng của kết nối đang chọn.
+   * Dịch vụ (SPDV) đã tích ở term kết nối đang chọn.
    *
    * @param FormStateInterface $form_state
    *   Trạng thái form.
    *
-   * @return array
-   *   Mảng gồm "services" và "addons", danh sách rỗng là không giới hạn.
+   * @return string[]
+   *   Mã dịch vụ, rỗng khi chưa chọn kết nối hoặc kết nối chưa tích dịch vụ.
    */
-  private function contract(FormStateInterface $form_state): array {
+  private function contractServices(FormStateInterface $form_state): array {
     $id = $this->currentValue($form_state, "field_so_config");
     $config = $id === "" ? NULL : $this->entityTypeManager->getStorage("taxonomy_term")->load($id);
 
-    if (!$config instanceof FieldableEntityInterface) {
-      return ["services" => [], "addons" => []];
-    }
-
-    return [
-      "services" => GetConfigShipping::values($config, "field_si_services"),
-      "addons" => GetConfigShipping::values($config, "field_si_addons"),
-    ];
+    return $config instanceof FieldableEntityInterface
+      ? GetConfigShipping::values($config, "field_si_services")
+      : [];
   }
 
   /**
@@ -1349,8 +1344,8 @@ final class ShippingOrderForm extends ContentEntityForm {
   /**
    * Đọc các dịch vụ GTGT đã tích trên form.
    *
-   * Form chỉ dựng ô cho những dịch vụ GTGT hợp lệ với dịch vụ đang chọn nên
-   * giá trị gửi lên cũng chỉ gồm những mã đó.
+   * Bảng chỉ có dòng cho những dịch vụ GTGT của SPDV đang chọn nên giá trị
+   * gửi lên cũng chỉ gồm những mã đó.
    *
    * @param FormStateInterface $form_state
    *   Trạng thái form.
@@ -1374,7 +1369,7 @@ final class ShippingOrderForm extends ContentEntityForm {
           continue;
         }
 
-        $value = trim((string) ($values[$prop] ?? ""));
+        $value = trim((string) ($values["props"][$prop] ?? ""));
 
         $value = match ($definition["type"]) {
           "flag" => $value !== "" && $value !== "0" ? "1" : "0",

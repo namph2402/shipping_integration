@@ -11,11 +11,6 @@ entity.shipping_address.delete_form:
   route_name: entity.shipping_address.delete_form
   base_route: entity.shipping_address.canonical
   weight: 10
-entity.shipping_address.collection:
-  title: 'Shipping addresses'
-  route_name: entity.shipping_address.collection
-  base_route: system.admin_content
-  weight: 10
 entity.shipping_address_type.edit_form:
   title: 'Edit'
   route_name: entity.shipping_address_type.edit_form
@@ -37,11 +32,6 @@ entity.shipping_order.delete_form:
   title: 'Delete'
   route_name: entity.shipping_order.delete_form
   base_route: entity.shipping_order.canonical
-  weight: 10
-entity.shipping_order.collection:
-  title: 'Shipping orders'
-  route_name: entity.shipping_order.collection
-  base_route: system.admin_content
   weight: 10
 entity.shipping_order_type.edit_form:
   title: 'Edit'
@@ -68,9 +58,4 @@ entity.shipping_type.delete_form:
   title: 'Delete'
   route_name: entity.shipping_type.delete_form
   base_route: entity.shipping_type.canonical
-  weight: 10
-entity.shipping_type.collection:
-  title: 'Shipping types'
-  route_name: entity.shipping_type.collection
-  base_route: system.admin_content
   weight: 10
