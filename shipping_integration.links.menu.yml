@@ -1,8 +1,14 @@
-shipping_integration.admin:
+shipping_integration.admin_config:
   title: 'Vận chuyển'
+  description: 'Hãng vận chuyển, địa chỉ và đơn vận chuyển.'
+  route_name: shipping_integration.admin_config
+  parent: system.admin_structure
+
+shipping_integration.admin:
+  title: 'Thông tin vận chuyển'
   description: 'Quản lý đơn hàng và cấu hình kết nối các hãng vận chuyển.'
   route_name: shipping_integration.order_list
-  parent: system.admin
+  parent: shipping_integration.admin_config
   weight: 10
 
 shipping_integration.order_list:
@@ -17,12 +23,6 @@ shipping_integration.log_collection:
   route_name: shipping_integration.log_collection
   parent: shipping_integration.admin
   weight: 5
-
-shipping_integration.admin_config:
-  title: 'Vận chuyển'
-  description: 'Hãng vận chuyển, địa chỉ và đơn vận chuyển.'
-  route_name: shipping_integration.admin_config
-  parent: system.admin_structure
 
 shipping_integration.admin_config.carrier:
   title: 'Hãng vận chuyển'

@@ -17,25 +17,15 @@ dependencies:
     - field.field.taxonomy_term.shipping_integration.field_si_webhook_skip
     - taxonomy.vocabulary.shipping_integration
   module:
-    - options
     - path
-    - text
 id: taxonomy_term.shipping_integration.default
 targetEntityType: taxonomy_term
 bundle: shipping_integration
 mode: default
 content:
-  description:
-    type: text_textarea
-    weight: 1
-    region: content
-    settings:
-      rows: 5
-      placeholder: ''
-    third_party_settings: {  }
   field_si_code:
     type: string_textfield
-    weight: 7
+    weight: 6
     region: content
     settings:
       size: 60
@@ -43,7 +33,7 @@ content:
     third_party_settings: {  }
   field_si_contract:
     type: string_textfield
-    weight: 8
+    weight: 7
     region: content
     settings:
       size: 60
@@ -59,7 +49,7 @@ content:
     third_party_settings: {  }
   field_si_host:
     type: string_textfield
-    weight: 4
+    weight: 3
     region: content
     settings:
       size: 60
@@ -67,11 +57,17 @@ content:
     third_party_settings: {  }
   field_si_password:
     type: string_textfield
-    weight: 6
+    weight: 5
     region: content
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_si_services:
+    type: options_buttons
+    weight: 9
+    region: content
+    settings: {  }
     third_party_settings: {  }
   field_si_token:
     type: string_textarea
@@ -81,15 +77,9 @@ content:
       rows: 4
       placeholder: ''
     third_party_settings: {  }
-  field_si_services:
-    type: options_buttons
-    weight: 9
-    region: content
-    settings: {  }
-    third_party_settings: {  }
   field_si_type:
     type: entity_reference_autocomplete
-    weight: 2
+    weight: 1
     region: content
     settings:
       match_operator: CONTAINS
@@ -105,7 +95,7 @@ content:
     third_party_settings: {  }
   field_si_username:
     type: string_textfield
-    weight: 5
+    weight: 4
     region: content
     settings:
       size: 60
@@ -136,7 +126,7 @@ content:
     third_party_settings: {  }
   langcode:
     type: language_select
-    weight: 3
+    weight: 2
     region: content
     settings:
       include_locked: true
@@ -162,5 +152,5 @@ content:
     settings:
       display_label: true
     third_party_settings: {  }
-hidden: {  }
-
+hidden:
+  description: true
