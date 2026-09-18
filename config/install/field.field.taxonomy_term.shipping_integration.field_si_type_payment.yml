@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_type_payment
+    - taxonomy.vocabulary.shipping_integration
+  module:
+    - options
+id: taxonomy_term.shipping_integration.field_si_type_payment
+field_name: field_si_type_payment
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: 'Loại thanh toán'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: pay_immediately
+default_value_callback: ''
+settings: {  }
+field_type: list_string
+

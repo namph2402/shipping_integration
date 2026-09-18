@@ -137,7 +137,6 @@
 							<th class="text-nowrap">{{ "Addon fee"|t }}</th>
 							<th class="text-nowrap">{{ "Total fee"|t }}</th>
 							<th class="text-nowrap">{{ "Delivery post office"|t }}</th>
-							<th class="text-nowrap">{{ "Connection"|t }}</th>
 							<th class="text-nowrap">{{ "Synced"|t }}</th>
 							<th class="text-nowrap" data-col-export="0" data-col-sort="0" data-col-lock="1">{{ "Action"|t }}</th>
 						</tr>
@@ -167,7 +166,6 @@
 								<td class="text-end" data-value="{{ item.vas_fee }}">{{ item.vas_fee|number_format(0, ",", ".") }}</td>
 								<td class="text-end" data-value="{{ item.total_fee }}">{{ item.total_fee|number_format(0, ",", ".") }}</td>
 								<td>{{ item.bcp_name }}</td>
-								<td>{{ item.config }}</td>
 								<td class="text-center" data-value="{{ item.synced }}">
 									{% if item.synced %}{{ item.synced|date("d/m/Y H:i") }}{% endif %}
 								</td>

@@ -4,6 +4,7 @@ namespace Drupal\shipping_integration\Service;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\shipping_integration\ShippingProvidersPluginManager;
@@ -25,6 +26,11 @@ class GetConfigShipping {
    * Từ vựng chứa các term cấu hình kết nối, mỗi term là một tài khoản hãng.
    */
   public const VOCABULARY = "shipping_integration";
+
+  /**
+   * Loại thanh toán dùng khi term kết nối chưa khai.
+   */
+  public const PAYMENT_DEFAULT = "pay_immediately";
 
   /**
    * Thời hạn sử dụng của token sau khi lấy mới.
@@ -135,6 +141,10 @@ class GetConfigShipping {
       "shipping_password" => $this->value($config_entity, "field_si_password"),
       "shipping_code" => $this->value($config_entity, "field_si_code"),
       "shipping_contract" => $this->value($config_entity, "field_si_contract"),
+      "shipping_payment" => $this->value($config_entity, "field_si_type_payment") ?: self::PAYMENT_DEFAULT,
+      // Dịch vụ và dịch vụ GTGT tích theo hợp đồng, rỗng là không giới hạn.
+      "shipping_services" => self::values($config_entity, "field_si_services"),
+      "shipping_addons" => self::values($config_entity, "field_si_addons"),
       "shipping_token" => $this->value($config_entity, "field_si_token"),
       "shipping_expiration" => $this->value($config_entity, "field_si_expiration"),
     ];
@@ -275,6 +285,28 @@ class GetConfigShipping {
     return $config_entity->hasField($field)
       ? (string) $config_entity->get($field)->value
       : "";
+  }
+
+  /**
+   * Đọc mọi giá trị của một field nhiều giá trị kiểu chuỗi.
+   *
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $config_entity
+   *   Term cấu hình.
+   * @param string $field
+   *   Tên field.
+   *
+   * @return string[]
+   *   Danh sách giá trị, rỗng khi field trống hoặc bundle không có field.
+   */
+  public static function values(FieldableEntityInterface $config_entity, string $field): array {
+    if (!$config_entity->hasField($field)) {
+      return [];
+    }
+
+    return array_values(array_filter(array_map(
+      static fn (array $item): string => (string) ($item["value"] ?? ""),
+      $config_entity->get($field)->getValue()
+    )));
   }
 
 }

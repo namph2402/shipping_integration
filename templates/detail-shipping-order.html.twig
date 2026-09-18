@@ -118,6 +118,9 @@
 						<tbody>
 							<tr><th>{{ "COD"|t }}</th><td class="text-end">{{ data.cod|number_format(0, ",", ".") }}</td></tr>
 							<tr><th>{{ "Insurance value"|t }}</th><td class="text-end">{{ data.insurance|number_format(0, ",", ".") }}</td></tr>
+							{% if data.addons %}
+								<tr><th>{{ "Addon services"|t }}</th><td class="text-end">{% for line in data.addons %}<div>{{ line }}</div>{% endfor %}</td></tr>
+							{% endif %}
 							<tr><th>{{ "Main fee"|t }}</th><td class="text-end">{{ data.main_fee|number_format(0, ",", ".") }}</td></tr>
 							<tr><th>{{ "Addon fee"|t }}</th><td class="text-end">{{ data.vas_fee|number_format(0, ",", ".") }}</td></tr>
 							<tr class="fw-bold"><th>{{ "Total fee"|t }}</th><td class="text-end">{{ data.total_fee|number_format(0, ",", ".") }}</td></tr>

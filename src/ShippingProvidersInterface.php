@@ -17,9 +17,10 @@ namespace Drupal\shipping_integration;
  * Mảng $order đã chuẩn hoá gồm: draft, type, sale_code, content, weight,
  * length, width, height, service, vehicle, send_type, is_broken,
  * delivery_time, delivery_require, delivery_note, org_collect, org_accept,
- * cod, insurance, is_new_address, original_id, item_code và hai nhánh con
- * sender/receiver (name, phone, email, address, province_code, province_name,
- * district_code, district_name, commune_code, commune_name).
+ * cod, insurance, addons (mã dịch vụ GTGT => [mã thuộc tính => giá trị]),
+ * is_new_address, original_id, item_code và hai nhánh con sender/receiver
+ * (name, phone, email, address, province_code, province_name, district_code,
+ * district_name, commune_code, commune_name).
  */
 interface ShippingProvidersInterface {
 
@@ -65,7 +66,8 @@ interface ShippingProvidersInterface {
    * @param array $config
    *   Cấu hình kết nối.
    * @param array $order
-   *   Đơn hàng đã chuẩn hoá, bắt buộc có original_id và item_code.
+   *   Đơn hàng đã chuẩn hoá, bắt buộc có original_id và item_code; khoá
+   *   affair_type là loại hiệu chỉnh người dùng chọn, rỗng thì dùng mặc định.
    *
    * @return array
    *   Kết quả hiệu chỉnh gồm type, message, case_id.

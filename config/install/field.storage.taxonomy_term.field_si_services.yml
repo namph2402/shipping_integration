@@ -4,16 +4,17 @@ dependencies:
   module:
     - options
     - shipping_integration
-id: shipping_order.field_so_service
-field_name: field_so_service
-entity_type: shipping_order
+    - taxonomy
+id: taxonomy_term.field_si_services
+field_name: field_si_services
+entity_type: taxonomy_term
 type: list_string
 settings:
   allowed_values: {  }
   allowed_values_function: 'shipping_integration_vnpost_services'
 module: options
 locked: false
-cardinality: 1
+cardinality: -1
 translatable: true
 indexes: {  }
 persist_with_no_fields: false

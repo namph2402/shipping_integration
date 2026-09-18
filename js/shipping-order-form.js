@@ -59,18 +59,24 @@
   Drupal.behaviors.shippingOrderFormCod = {
     attach: function (context) {
       once('shipping-form-cod', '.shipping-order-form', context).forEach(function (form) {
-        var input = form.querySelector('.shipping-cod-input');
         var output = form.querySelector('.shipping-cod-total');
 
-        if (!input || !output) {
+        if (!output) {
           return;
         }
 
+        // Thẻ dịch vụ được dựng lại qua AJAX mỗi lần đổi dịch vụ nên tra lại
+        // ô COD ở mỗi lần gõ thay vì giữ tham chiếu tới ô cũ.
         function refresh() {
-          output.textContent = formatNumber(parseFloat(input.value)) + ' đ';
+          var input = form.querySelector('.shipping-cod-input');
+          var toggle = form.querySelector('.shipping-cod-toggle');
+          var amount = input && toggle && toggle.checked ? parseFloat(input.value) : 0;
+
+          output.textContent = formatNumber(amount) + ' đ';
         }
 
-        input.addEventListener('input', refresh);
+        form.addEventListener('input', refresh);
+        form.addEventListener('change', refresh);
         refresh();
       });
     }

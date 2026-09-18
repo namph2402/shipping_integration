@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\file\FileRepositoryInterface;
+use Drupal\shipping_integration\Catalog\VnpostCatalog;
 use Drupal\shipping_integration\Exception\ShippingTokenException;
 use Drupal\shipping_integration\ShippingOrderInterface;
 use Drupal\shipping_integration\ShippingProvidersInterface;
@@ -33,6 +34,67 @@ class HandleShipping {
    * Giá trị field_so_status khi đơn mới chỉ nằm nháp trên hệ thống hãng.
    */
   public const STATUS_DRAFT = 0;
+
+  /**
+   * Id địa chỉ đã tra trong request, khoá theo cấp, mã, bộ, hãng và cấp cha.
+   *
+   * Kéo về hàng trăm đơn thì cùng một tỉnh bị tra lại rất nhiều lần.
+   */
+  private array $addressCache = [];
+
+  /**
+   * Các trường người dùng khai trên form, được chụp lại trước khi hiệu chỉnh.
+   *
+   * Form lưu đơn trước rồi mới gửi yêu cầu hiệu chỉnh, nên hãng từ chối thì
+   * phải có bản cũ để trả đơn về đúng thông tin đang nằm trên hệ thống hãng.
+   */
+  private const CORRECTION_FIELDS = [
+    "field_so_config",
+    "field_so_carrier",
+    "field_so_sale_code",
+    "field_so_service",
+    "field_so_content",
+    "field_so_weight",
+    "field_so_length",
+    "field_so_width",
+    "field_so_height",
+    "field_so_vehicle",
+    "field_so_send_type",
+    "field_so_is_broken",
+    "field_so_cod",
+    "field_so_insurance",
+    "field_so_addons",
+    "field_so_delivery_time",
+    "field_so_delivery_require",
+    "field_so_delivery_note",
+    "field_so_org_collect",
+    "field_so_org_accept",
+    "field_so_is_new_address",
+    "field_so_sender_name",
+    "field_so_sender_phone",
+    "field_so_sender_email",
+    "field_so_sender_address",
+    "field_so_sender_province",
+    "field_so_sender_district",
+    "field_so_sender_commune",
+    "field_so_receiver_name",
+    "field_so_receiver_phone",
+    "field_so_receiver_email",
+    "field_so_receiver_address",
+    "field_so_receiver_province",
+    "field_so_receiver_district",
+    "field_so_receiver_commune",
+  ];
+
+  /**
+   * Mã kết quả hãng dùng cho yêu cầu hiệu chỉnh hoặc hủy bị từ chối.
+   */
+  private const CASE_REJECTED = "01";
+
+  /**
+   * Múi giờ của các mốc thời gian hãng trả về.
+   */
+  private const CARRIER_TIMEZONE = "Asia/Ho_Chi_Minh";
 
   /**
    * {@inheritdoc}
@@ -78,7 +140,7 @@ class HandleShipping {
       $payload["draft"] = $draft;
 
       $record = $provider->createOrder($config, $payload);
-      $this->applyRecord($order, $record);
+      $this->applyRecord($order, $record, $config);
       $order->save();
 
       return [
@@ -112,7 +174,7 @@ class HandleShipping {
       }
 
       $record = $provider->confirmDraft($config, $this->lookupCode($order), $this->lookupType($order));
-      $this->applyRecord($order, $record);
+      $this->applyRecord($order, $record, $config);
       $order->save();
 
       return [
@@ -126,24 +188,166 @@ class HandleShipping {
   /**
    * Hiệu chỉnh một đơn hàng đã tạo trên hệ thống hãng.
    *
+   * Bản chụp thông tin trước khi sửa được cất trong nhật ký cùng CaseId, để
+   * khi hãng từ chối (ngay lúc gửi hoặc lúc lấy kết quả phê duyệt) thì trả đơn
+   * về đúng thông tin cũ.
+   *
    * @param ShippingOrderInterface $order
    *   Đơn hàng cần hiệu chỉnh.
+   * @param array|null $previous
+   *   Bản chụp thông tin trước khi sửa, lấy bằng ::snapshot() trước khi form
+   *   lưu đơn. Để trống thì chụp theo dữ liệu đang lưu, dùng khi gửi lại đơn
+   *   mà không sửa gì.
+   * @param string $affair_type
+   *   Loại hiệu chỉnh người dùng chọn, để trống thì plugin dùng loại mặc định
+   *   theo trạng thái của đơn.
    *
    * @return array
    *   Kết quả gồm success và message.
    */
-  public function updateOrder(ShippingOrderInterface $order): array {
-    return $this->run($order, "update", function (ShippingProvidersInterface $provider, array $config) use ($order): array {
-      $result = $provider->updateOrder($config, $this->buildOrderPayload($order));
+  public function updateOrder(ShippingOrderInterface $order, ?array $previous = NULL, string $affair_type = ""): array {
+    $previous ??= $this->snapshot($order);
+
+    $result = $this->run($order, "update", function (ShippingProvidersInterface $provider, array $config) use ($order, $previous, $affair_type): array {
+      $result = $provider->updateOrder($config, ["affair_type" => $affair_type] + $this->buildOrderPayload($order));
       $this->applyCase($order, $result);
       $order->save();
 
       return [
         "success" => !empty($result["success"]) || !empty($result["pending"]),
         "message" => $result["message"] ?: "Đã gửi yêu cầu hiệu chỉnh",
-        "data" => $result,
+        "data" => $result + ["previous" => $previous],
       ];
     });
+
+    if (empty($result["success"])) {
+      $this->restoreSnapshot($order, $previous, $this->fieldValue($order, "field_so_case_id"));
+      $result["message"] = ($result["message"] ?? "") . ". Đã khôi phục thông tin trước khi hiệu chỉnh";
+    }
+
+    return $result;
+  }
+
+  /**
+   * Chụp lại các trường người dùng khai của đơn theo dữ liệu đang lưu.
+   *
+   * Đọc lại từ cơ sở dữ liệu chứ không đọc entity đang cầm, vì form có thể đã
+   * chép giá trị mới vào entity trước khi lưu.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng cần chụp.
+   *
+   * @return array
+   *   Giá trị thô theo tên field.
+   */
+  public function snapshot(ShippingOrderInterface $order): array {
+    $stored = $order->isNew()
+      ? $order
+      : ($this->entityTypeManager->getStorage("shipping_order")->loadUnchanged($order->id()) ?? $order);
+
+    $values = [];
+
+    foreach (self::CORRECTION_FIELDS as $field) {
+      if ($stored->hasField($field)) {
+        $values[$field] = $stored->get($field)->getValue();
+      }
+    }
+
+    return $values;
+  }
+
+  /**
+   * Trả đơn về bản chụp trước khi hiệu chỉnh và ghi nhật ký.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng cần khôi phục.
+   * @param array $previous
+   *   Bản chụp do ::snapshot() tạo ra.
+   * @param string $case_id
+   *   Yêu cầu hiệu chỉnh bị từ chối, rỗng khi hãng chưa kịp cấp.
+   */
+  private function restoreSnapshot(ShippingOrderInterface $order, array $previous, string $case_id): void {
+    if ($previous === []) {
+      return;
+    }
+
+    try {
+      $changed = FALSE;
+
+      foreach ($previous as $field => $value) {
+        if (in_array($field, self::CORRECTION_FIELDS, TRUE) && $order->hasField($field) && $order->get($field)->getValue() != $value) {
+          $order->set($field, $value);
+          $changed = TRUE;
+        }
+      }
+
+      // Gửi lại đơn mà không sửa gì thì không có gì để trả về.
+      if (!$changed) {
+        return;
+      }
+
+      $order->skip_order_log = TRUE;
+      $order->save();
+    }
+    catch (\Throwable $e) {
+      $this->logger->error("Không khôi phục được đơn @order sau hiệu chỉnh bị từ chối: @message", [
+        "@order" => $order->id(),
+        "@message" => $e->getMessage(),
+        "exception" => $e,
+      ]);
+
+      return;
+    }
+
+    $this->orderLogger->log($order, "restore", [
+      "message" => "Khôi phục thông tin trước khi hiệu chỉnh vì VN-Post không chấp nhận",
+      "status_from" => $this->orderLogger->currentStatus($order),
+      "status_to" => $this->orderLogger->currentStatus($order),
+      "payload" => ["case_id" => $case_id, "restored" => $previous],
+    ]);
+  }
+
+  /**
+   * Tìm bản chụp đã cất khi gửi yêu cầu hiệu chỉnh có CaseId cho trước.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng.
+   * @param string $case_id
+   *   Yêu cầu hiệu chỉnh cần tìm.
+   *
+   * @return array|null
+   *   Bản chụp, hoặc NULL khi không có hay yêu cầu này đã được khôi phục rồi,
+   *   để lấy kết quả phê duyệt nhiều lần không đè lên những lần sửa sau đó.
+   */
+  private function findSnapshot(ShippingOrderInterface $order, string $case_id): ?array {
+    if ($case_id === "") {
+      return NULL;
+    }
+
+    $storage = $this->entityTypeManager->getStorage("shipping_order_log");
+    $ids = $storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition("order_id", $order->id())
+      ->condition("source", ["update", "restore"], "IN")
+      ->sort("id", "DESC")
+      ->range(0, 50)
+      ->execute();
+
+    foreach ($storage->loadMultiple($ids) as $entry) {
+      $payload = json_decode((string) $entry->get("payload")->value, TRUE);
+
+      if (!is_array($payload) || (string) ($payload["case_id"] ?? "") !== $case_id) {
+        continue;
+      }
+
+      if ($entry->get("source")->value === "restore") {
+        return NULL;
+      }
+
+      return is_array($payload["previous"] ?? NULL) ? $payload["previous"] : NULL;
+    }
+
+    return NULL;
   }
 
   /**
@@ -218,9 +422,21 @@ class HandleShipping {
         $order->save();
       }
 
+      $message = $result["message"] ?? "Chưa có kết quả phê duyệt";
+
+      // Yêu cầu hủy không có bản chụp nên findSnapshot() trả NULL và bỏ qua.
+      if (($result["type"] ?? "") === self::CASE_REJECTED) {
+        $previous = $this->findSnapshot($order, $case_id);
+
+        if ($previous !== NULL) {
+          $this->restoreSnapshot($order, $previous, $case_id);
+          $message .= ". Đã khôi phục thông tin trước khi hiệu chỉnh";
+        }
+      }
+
       return [
         "success" => !empty($result["success"]),
-        "message" => $result["message"] ?? "Chưa có kết quả phê duyệt",
+        "message" => $message,
         "data" => $result,
       ];
     });
@@ -277,7 +493,8 @@ class HandleShipping {
         ];
       }
 
-      $this->applyRecord($order, $record);
+      $this->applyRecord($order, $record, $config);
+      $this->applyContacts($order, $record);
       $order->save();
 
       return [
@@ -417,7 +634,7 @@ class HandleShipping {
         $is_new = FALSE;
       }
 
-      $this->applyRecord($order, $record, TRUE);
+      $this->applyRecord($order, $record, $config, TRUE);
       $order->save();
 
       $this->orderLogger->log($order, "pull", [
@@ -668,6 +885,7 @@ class HandleShipping {
       "sale_code" => $this->fieldValue($order, "field_so_sale_code"),
       "item_code" => $this->fieldValue($order, "field_so_item_code"),
       "original_id" => $this->fieldValue($order, "field_so_original_id"),
+      "status" => $this->fieldValue($order, "field_so_status"),
       "content" => $this->fieldValue($order, "field_so_content"),
       "weight" => (int) $this->fieldValue($order, "field_so_weight"),
       "length" => $this->fieldValue($order, "field_so_length"),
@@ -684,6 +902,11 @@ class HandleShipping {
       "org_accept" => $this->fieldValue($order, "field_so_org_accept"),
       "cod" => (float) $this->fieldValue($order, "field_so_cod"),
       "insurance" => (float) $this->fieldValue($order, "field_so_insurance"),
+      "addons" => VnpostCatalog::decode(
+        $this->fieldValue($order, "field_so_addons"),
+        (float) $this->fieldValue($order, "field_so_cod"),
+        (float) $this->fieldValue($order, "field_so_insurance"),
+      ),
       "is_new_address" => (bool) $this->fieldValue($order, "field_so_is_new_address"),
       "sender" => $this->buildParty($order, "sender"),
       "receiver" => $this->buildParty($order, "receiver"),
@@ -723,11 +946,23 @@ class HandleShipping {
    *   Đơn hàng cần cập nhật.
    * @param array $record
    *   Bản ghi hãng trả về.
+   * @param array $config
+   *   Cấu hình kết nối, dùng để tra danh mục địa chỉ đúng hãng.
    * @param bool $with_parties
    *   TRUE thì ghi cả thông tin người gửi và người nhận, dùng khi kéo đơn về
    *   từ hệ thống hãng thay vì khi vừa đẩy đơn do mình dựng lên.
    */
-  private function applyRecord(ShippingOrderInterface $order, array $record, bool $with_parties = FALSE): void {
+  private function applyRecord(ShippingOrderInterface $order, array $record, array $config, bool $with_parties = FALSE): void {
+    // Đơn kéo về hoặc đơn còn thiếu địa chỉ được phép đổi bộ hai/ba cấp theo
+    // dữ liệu hãng; đơn do mình khai đủ thì chỉ cập nhật trong đúng bộ đang
+    // dùng, vì /CreateOrder trả mã bộ ba cấp cũ kể cả khi đơn khai hai cấp.
+    $this->applyAddresses(
+      $order,
+      $record,
+      (string) ($config["shipping_type_id"] ?? ""),
+      $with_parties || !$this->hasAddresses($order)
+    );
+
     $this->setValue($order, "field_so_hdr_id", $record["orderHdrID"] ?? "");
     $this->setValue($order, "field_so_original_id", $record["originalID"] ?? "");
     $this->setValue($order, "field_so_item_code", $record["itemCode"] ?? "");
@@ -751,17 +986,27 @@ class HandleShipping {
       return;
     }
 
-    $this->setValue($order, "field_so_sender_name", $record["senderName"] ?? "");
-    $this->setValue($order, "field_so_sender_phone", $record["senderPhone"] ?? "");
-    $this->setValue($order, "field_so_sender_email", $record["senderEmail"] ?? "");
-    $this->setValue($order, "field_so_sender_address", $record["senderAddress"] ?? "");
-    $this->setValue($order, "field_so_receiver_name", $record["receiverName"] ?? "");
-    $this->setValue($order, "field_so_receiver_phone", $record["receiverPhone"] ?? "");
-    $this->setValue($order, "field_so_receiver_email", $record["receiverEmail"] ?? "");
-    $this->setValue($order, "field_so_receiver_address", $record["receiverAddress"] ?? "");
+    $this->applyContacts($order, $record);
+
+    // Đơn kéo về lấy ngày tạo trên hệ thống hãng thay cho lúc tạo bản ghi,
+    // nếu không mọi đơn kéo chung một lượt sẽ cùng một ngày tạo.
+    $created = $this->carrierTime((string) ($record["createdDate"] ?? ""));
+
+    if ($created !== NULL) {
+      $order->set("created", $created);
+    }
+
     $this->setValue($order, "field_so_weight", $record["weight"] ?? NULL);
     $this->setValue($order, "field_so_content", $record["contentNote"] ?? "");
     $this->setValue($order, "field_so_cod", $record["codAmount"] ?? NULL);
+
+    $addons = VnpostCatalog::fromRecord($record);
+
+    if ($addons !== []) {
+      $this->setValue($order, "field_so_addons", json_encode($addons, JSON_UNESCAPED_UNICODE));
+      $this->setValue($order, "field_so_insurance", $addons[VnpostCatalog::ADDON_INSURANCE][VnpostCatalog::PROP_INSURANCE_VALUE] ?? NULL);
+    }
+
     $this->setValue($order, "field_so_vehicle", $record["vehicle"] ?? "");
     $this->setValue($order, "field_so_send_type", $record["sendType"] ?? "");
     $this->setValue($order, "field_so_delivery_time", $record["deliveryTime"] ?? "");
@@ -769,6 +1014,265 @@ class HandleShipping {
     $this->setValue($order, "field_so_delivery_note", $record["deliveryInstruction"] ?? "");
     $this->setValue($order, "field_so_org_collect", $record["orgCodeCollect"] ?? "");
     $this->setValue($order, "field_so_org_accept", $record["orgCodeAccept"] ?? "");
+  }
+
+  /**
+   * Ghi tên, SĐT, email, địa chỉ người gửi và người nhận theo bản ghi hãng.
+   *
+   * Lấy đúng như hãng trả, kể cả bản đã bị che bằng dấu "+" vì hãng không trả
+   * bản đầy đủ. Hàm updateOrder() của hãng chặn hiệu chỉnh khi SĐT/địa chỉ
+   * còn bị che nên chuỗi này không bị gửi ngược lên hãng.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng cần cập nhật.
+   * @param array $record
+   *   Bản ghi hãng trả về.
+   */
+  private function applyContacts(ShippingOrderInterface $order, array $record): void {
+    foreach (["sender", "receiver"] as $party) {
+      foreach (["name" => "Name", "phone" => "Phone", "email" => "Email", "address" => "Address"] as $field => $key) {
+        $this->setValue($order, "field_so_{$party}_{$field}", (string) ($record[$party . $key] ?? ""));
+      }
+    }
+  }
+
+  /**
+   * Đổi mã tỉnh, quận, xã trong bản ghi của hãng thành địa chỉ trên entity.
+   *
+   * Gói tin không cho biết đơn khai theo bộ hai cấp hay ba cấp. Các khoá chính
+   * có thể mang mã bộ ba cấp cũ (như /CreateOrder) còn mã hai cấp nằm ở các
+   * khoá hậu tố "New", nên bộ hai cấp ưu tiên đọc khoá "New". Mã phường/xã lại
+   * có thể trùng giữa hai bộ, nên bộ ba cấp chỉ nhận khi tra được trọn chuỗi
+   * tỉnh → quận → xã.
+   *
+   * Chỉ ghi khi tra được đủ cả người gửi lẫn người nhận trong cùng một bộ: ghi
+   * lẻ một bên hoặc mỗi bên một bộ sẽ làm cờ hai cấp lệch với địa chỉ đang lưu,
+   * form mở lại không còn tìm thấy lựa chọn và xoá trắng địa chỉ khi lưu.
+   * Không tra đủ thì giữ nguyên toàn bộ giá trị đang có.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng cần cập nhật.
+   * @param array $record
+   *   Bản ghi hãng trả về.
+   * @param string $type_id
+   *   ID của entity shipping_type sở hữu danh mục địa chỉ.
+   * @param bool $allow_switch
+   *   TRUE cho phép chuyển đơn sang bộ còn lại khi bộ đang dùng không tra được.
+   */
+  private function applyAddresses(ShippingOrderInterface $order, array $record, string $type_id, bool $allow_switch): void {
+    if ($type_id === "" || !$order->hasField("field_so_sender_province")) {
+      return;
+    }
+
+    $current = $order->hasField("field_so_is_new_address") && !$order->get("field_so_is_new_address")->isEmpty()
+      ? (bool) $order->get("field_so_is_new_address")->value
+      : TRUE;
+
+    foreach ($allow_switch ? [$current, !$current] : [$current] as $two_level) {
+      $resolved = [];
+
+      foreach (["sender", "receiver"] as $party) {
+        $ids = $this->resolveAddress($this->addressCodes($record, $party, $two_level), $two_level, $type_id);
+
+        if ($ids === NULL) {
+          continue 2;
+        }
+
+        $resolved[$party] = $ids;
+      }
+
+      $order->skip_order_log = TRUE;
+
+      if ($order->hasField("field_so_is_new_address")) {
+        $order->set("field_so_is_new_address", $two_level);
+      }
+
+      foreach ($resolved as $party => $ids) {
+        foreach ($ids as $level => $id) {
+          if ($order->hasField("field_so_{$party}_{$level}")) {
+            $order->set("field_so_{$party}_{$level}", $id);
+          }
+        }
+      }
+
+      return;
+    }
+  }
+
+  /**
+   * Đọc mã tỉnh, quận, xã của một bên trong bản ghi hãng.
+   *
+   * @param array $record
+   *   Bản ghi hãng trả về.
+   * @param string $party
+   *   "sender" hoặc "receiver".
+   * @param bool $two_level
+   *   TRUE đọc mã bộ hai cấp, ưu tiên các khoá hậu tố "New".
+   *
+   * @return array
+   *   Mã province, district, commune.
+   */
+  private function addressCodes(array $record, string $party, bool $two_level): array {
+    // Bên nhận dùng khoá rút gọn "Comm" ở /CreateOrder, /getOrder và
+    // /GetListOrder nên đọc cả hai kiểu tên.
+    $read = static function (array $keys) use ($record, $party): string {
+      foreach ($keys as $key) {
+        $value = (string) ($record[$party . $key] ?? "");
+
+        if ($value !== "") {
+          return $value;
+        }
+      }
+
+      return "";
+    };
+
+    $province = ["ProvinceCode"];
+    $commune = ["CommuneCode", "CommCode"];
+
+    if ($two_level) {
+      $province = ["ProvinceCodeNew", ...$province];
+      $commune = ["CommuneCodeNew", "CommCodeNew", ...$commune];
+    }
+
+    return [
+      "province" => $read($province),
+      "district" => $read(["DistrictCode"]),
+      "commune" => $read($commune),
+    ];
+  }
+
+  /**
+   * Đổi mốc thời gian dạng "d/m/Y H:i:s" giờ Việt Nam của hãng sang timestamp.
+   *
+   * @param string $value
+   *   Chuỗi thời gian hãng trả về.
+   *
+   * @return int|null
+   *   Timestamp, hoặc NULL khi không đọc được.
+   */
+  private function carrierTime(string $value): ?int {
+    $date = \DateTimeImmutable::createFromFormat(
+      "!d/m/Y H:i:s",
+      trim($value),
+      new \DateTimeZone(self::CARRIER_TIMEZONE)
+    );
+
+    return $date === FALSE ? NULL : $date->getTimestamp();
+  }
+
+  /**
+   * Kiểm tra đơn đã có đủ tỉnh và xã cho cả hai bên hay chưa.
+   *
+   * @param ShippingOrderInterface $order
+   *   Đơn hàng cần kiểm tra.
+   *
+   * @return bool
+   *   TRUE khi cả người gửi và người nhận đều đã có tỉnh và xã.
+   */
+  private function hasAddresses(ShippingOrderInterface $order): bool {
+    foreach (["sender", "receiver"] as $party) {
+      foreach (["province", "commune"] as $level) {
+        $field = "field_so_{$party}_{$level}";
+
+        if (!$order->hasField($field) || $order->get($field)->isEmpty()) {
+          return FALSE;
+        }
+      }
+    }
+
+    return TRUE;
+  }
+
+  /**
+   * Tra id địa chỉ của một bên theo bộ hai cấp hoặc ba cấp.
+   *
+   * @param array $codes
+   *   Mã province, district, commune của hãng.
+   * @param bool $two_level
+   *   TRUE tra theo bộ hai cấp.
+   * @param string $type_id
+   *   ID của entity shipping_type.
+   *
+   * @return array|null
+   *   Id theo từng cấp (district là NULL với bộ hai cấp), hoặc NULL khi không
+   *   tra được trọn chuỗi.
+   */
+  private function resolveAddress(array $codes, bool $two_level, string $type_id): ?array {
+    if ($codes["province"] === "" || $codes["commune"] === "") {
+      return NULL;
+    }
+
+    $province = $this->findAddress("province", $codes["province"], $two_level, $type_id);
+
+    if ($province === NULL) {
+      return NULL;
+    }
+
+    if ($two_level) {
+      $commune = $this->findAddress("commune", $codes["commune"], TRUE, $type_id, ["field_province" => $province]);
+
+      return $commune === NULL ? NULL : [
+        "province" => $province,
+        "district" => NULL,
+        "commune" => $commune,
+      ];
+    }
+
+    if ($codes["district"] === "") {
+      return NULL;
+    }
+
+    $district = $this->findAddress("district", $codes["district"], FALSE, $type_id, ["field_province" => $province]);
+    $commune = $district === NULL
+      ? NULL
+      : $this->findAddress("commune", $codes["commune"], FALSE, $type_id, ["field_district" => $district]);
+
+    return $commune === NULL ? NULL : [
+      "province" => $province,
+      "district" => $district,
+      "commune" => $commune,
+    ];
+  }
+
+  /**
+   * Tìm id một địa chỉ trong danh mục theo mã của hãng.
+   *
+   * @param string $bundle
+   *   Cấp địa chỉ: province, district hoặc commune.
+   * @param string $code
+   *   Mã của hãng.
+   * @param bool $two_level
+   *   TRUE tìm trong bộ hai cấp.
+   * @param string $type_id
+   *   ID của entity shipping_type.
+   * @param array $parents
+   *   Điều kiện cấp cha, khoá là tên field.
+   *
+   * @return string|null
+   *   Id địa chỉ, hoặc NULL khi không có.
+   */
+  private function findAddress(string $bundle, string $code, bool $two_level, string $type_id, array $parents = []): ?string {
+    $key = implode(":", [$bundle, $code, (int) $two_level, $type_id, ...array_values($parents)]);
+
+    if (!array_key_exists($key, $this->addressCache)) {
+      $query = $this->entityTypeManager->getStorage("shipping_address")->getQuery()
+        ->accessCheck(FALSE)
+        ->condition("bundle", $bundle)
+        ->condition("field_code", $code)
+        ->condition("field_type", $type_id)
+        ->condition("field_is_new_address", (int) $two_level)
+        ->range(0, 1);
+
+      foreach ($parents as $field => $value) {
+        $query->condition($field, $value);
+      }
+
+      $ids = $query->execute();
+      $this->addressCache[$key] = $ids ? (string) reset($ids) : NULL;
+    }
+
+    return $this->addressCache[$key];
   }
 
   /**

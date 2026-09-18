@@ -8,9 +8,12 @@
 declare(strict_types=1);
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
+use Drupal\shipping_integration\Catalog\VnpostCatalog;
 use Drupal\shipping_integration\Service\GetConfigShipping;
 
 /**
@@ -36,6 +39,23 @@ function shipping_integration_theme(): array {
       ],
     ],
   ];
+}
+
+/**
+ * Danh sách giá trị của field dịch vụ vận chuyển (đơn hàng và term kết nối).
+ *
+ * Đọc thẳng từ danh mục của hãng để field đơn hàng và field khai theo hợp
+ * đồng luôn dùng chung một bộ mã.
+ */
+function shipping_integration_vnpost_services(FieldStorageDefinitionInterface $definition, ?FieldableEntityInterface $entity = NULL, bool &$cacheable = TRUE): array {
+  return VnpostCatalog::serviceOptions();
+}
+
+/**
+ * Danh sách giá trị của field dịch vụ GTGT khai theo hợp đồng.
+ */
+function shipping_integration_vnpost_addons(FieldStorageDefinitionInterface $definition, ?FieldableEntityInterface $entity = NULL, bool &$cacheable = TRUE): array {
+  return VnpostCatalog::addonOptions();
 }
 
 /**

@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.shipping_order.field_so_addons
+    - shipping_integration.shipping_order_type.vnpost
+  module:
+    - shipping_integration
+id: shipping_order.vnpost.field_so_addons
+field_name: field_so_addons
+entity_type: shipping_order
+bundle: vnpost
+label: 'Dịch vụ GTGT'
+description: 'JSON mã dịch vụ GTGT => {mã thuộc tính: giá trị}, do form tạo đơn ghi.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

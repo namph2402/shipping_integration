@@ -128,3 +128,12 @@
 .shipping-order-form .shipping-form-layout {
   padding-bottom: 1rem;
 }
+
+/* Ô chọn loại hiệu chỉnh đứng cạnh nút gửi, bỏ khoảng trống của form-item. */
+.shipping-order-form .shipping-form-actions .form-item:has(.shipping-correction-type) {
+  margin: 0;
+}
+
+.shipping-order-form .shipping-addon + .shipping-addon {
+  border-top: 1px dashed #dee2e6;
+}

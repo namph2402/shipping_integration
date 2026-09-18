@@ -91,6 +91,9 @@ settings:
     -
       value: 29
       label: 'Đã trả phí hủy đơn hàng'
+    -
+      value: -8
+      label: 'Đã xóa'
   allowed_values_function: ''
 module: options
 locked: false

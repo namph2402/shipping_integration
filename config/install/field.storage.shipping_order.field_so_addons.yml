@@ -2,16 +2,13 @@ langcode: en
 status: true
 dependencies:
   module:
-    - options
     - shipping_integration
-id: shipping_order.field_so_service
-field_name: field_so_service
+id: shipping_order.field_so_addons
+field_name: field_so_addons
 entity_type: shipping_order
-type: list_string
-settings:
-  allowed_values: {  }
-  allowed_values_function: 'shipping_integration_vnpost_services'
-module: options
+type: string_long
+settings: {  }
+module: core
 locked: false
 cardinality: 1
 translatable: true

@@ -59,6 +59,7 @@ class ShippingOrderLog extends ContentEntityBase {
     'update' => 'Hiệu chỉnh đơn',
     'cancel' => 'Hủy đơn',
     'approval' => 'Kết quả phê duyệt',
+    'restore' => 'Khôi phục sau hiệu chỉnh bị từ chối',
     'fee' => 'Tính cước phí',
     'label' => 'In vận đơn',
     'sync' => 'Đồng bộ đơn',

@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_si_services
+    - taxonomy.vocabulary.shipping_integration
+  module:
+    - options
+id: taxonomy_term.shipping_integration.field_si_services
+field_name: field_si_services
+entity_type: taxonomy_term
+bundle: shipping_integration
+label: 'Dịch vụ theo hợp đồng'
+description: 'Tích các sản phẩm dịch vụ tài khoản được dùng theo hợp đồng với hãng. Để trống thì form tạo đơn hiện mọi dịch vụ trong danh mục.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: list_string

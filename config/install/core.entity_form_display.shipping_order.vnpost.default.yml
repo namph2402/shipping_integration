@@ -5,6 +5,7 @@ dependencies:
     - field.field.shipping_order.vnpost.field_so_bcp_code
     - field.field.shipping_order.vnpost.field_so_bcp_name
     - field.field.shipping_order.vnpost.field_so_carrier
+    - field.field.shipping_order.vnpost.field_so_addons
     - field.field.shipping_order.vnpost.field_so_case_id
     - field.field.shipping_order.vnpost.field_so_case_type
     - field.field.shipping_order.vnpost.field_so_cod
@@ -464,4 +465,5 @@ content:
     third_party_settings: {  }
     weight: 51
     region: content
-hidden: {  }
+hidden:
+  field_so_addons: true

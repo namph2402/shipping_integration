@@ -5,6 +5,7 @@ namespace Drupal\shipping_integration\Plugin\Providers;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\shipping_integration\Catalog\VnpostCatalog;
 use Drupal\shipping_integration\Exception\ShippingTokenException;
 use Drupal\shipping_integration\ShippingProvidersAttribute;
 use Drupal\shipping_integration\ShippingProvidersInterface;
@@ -40,29 +41,41 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class VnpostProvider extends PluginBase implements ShippingProvidersInterface, ContainerFactoryPluginInterface {
 
   /**
-   * Mã dịch vụ cộng thêm phát hàng thu tiền hộ.
-   */
-  private const ADDON_COD = "GTG021";
-
-  /**
-   * Mã thuộc tính số tiền thu hộ của dịch vụ COD.
-   */
-  private const PROP_COD_AMOUNT = "PROP0018";
-
-  /**
-   * Mã dịch vụ cộng thêm khai giá hàng hóa.
-   */
-  private const ADDON_INSURANCE = "GTG008";
-
-  /**
-   * Mã thuộc tính giá trị khai giá.
-   */
-  private const PROP_INSURANCE_VALUE = "PROP0026";
-
-  /**
    * Giá trị mã quận/huyện bắt buộc khi khai địa chỉ hai cấp.
    */
   private const DISTRICT_TWO_LEVEL = "VNPOST";
+
+  /**
+   * Tên các loại hiệu chỉnh (AffairType), không gồm hủy vì hủy có lệnh riêng.
+   */
+  public const CORRECTION_LABELS = [
+    "01" => "Thay đổi thông tin đơn hàng",
+    "02" => "Thay đổi thông tin đơn hàng (trừ người gửi)",
+    "04" => "Thay đổi thông tin người nhận (tên, SĐT, địa chỉ)",
+    "08" => "Rút bưu gửi",
+  ];
+
+  /**
+   * Loại hiệu chỉnh được phép theo trạng thái hiện tại của đơn.
+   *
+   * Theo phụ lục "Trạng thái Hủy/Hiệu chỉnh": trước khi lấy hàng thành công
+   * được đổi thông tin đơn (loại 1, 2), bưu cục đã nhận hàng thì chỉ còn đổi
+   * người nhận hoặc rút bưu gửi (loại 4, 8). Loại đứng đầu là loại mặc định.
+   * Trạng thái không có trong bảng không được hiệu chỉnh.
+   *
+   * @see https://my-uat.vnpost.vn/static/appendix/cancel-status
+   */
+  private const CORRECTION_TYPES = [
+    1 => ["02", "01"],
+    2 => ["02", "01"],
+    3 => ["02", "01"],
+    4 => ["02", "01"],
+    5 => ["02", "01"],
+    6 => ["02", "01"],
+    7 => ["04", "08"],
+    8 => ["02", "01"],
+    101 => ["04", "08"],
+  ];
 
   /**
    * Phạm vi vận chuyển trong nước khi tính cước.
@@ -265,11 +278,27 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       throw new \DomainException("Đơn hàng chưa có ID gốc để hiệu chỉnh");
     }
 
+    $status = (string) ($order["status"] ?? "");
+    $allowed = self::correctionTypes($status);
+
+    if ($allowed === []) {
+      throw new \DomainException($status === ""
+        ? "Đơn hàng chưa có trạng thái, hãy đồng bộ đơn trước khi hiệu chỉnh"
+        : "VN-Post không cho hiệu chỉnh đơn ở trạng thái {$status}");
+    }
+
+    $affair = (string) ($order["affair_type"] ?? "");
+    $affair = $affair === "" ? (string) array_key_first($allowed) : $affair;
+
+    if (!isset($allowed[$affair])) {
+      throw new \DomainException("Đơn ở trạng thái {$status} không được chọn loại hiệu chỉnh " . (self::CORRECTION_LABELS[$affair] ?? $affair));
+    }
+
     $response = $this->request(
       $config,
       "/orderCorrection",
       [],
-      $this->buildCorrection($config, $order),
+      $this->buildCorrection($config, $order, $affair),
       "POST",
       TRUE,
       self::LONG_TIMEOUT
@@ -345,8 +374,8 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
         "length" => $this->orNull($order["length"] ?? ""),
         "height" => $this->orNull($order["height"] ?? ""),
         "serviceCode" => $this->orNull($order["service"] ?? ""),
-        "addonService" => $this->buildAddonService($order),
-        "additionRequest" => [],
+        "addonService" => $this->addons($order, VnpostCatalog::GROUP_ADDON),
+        "additionRequest" => $this->addons($order, VnpostCatalog::GROUP_REQUEST),
         "vehicle" => (string) ($order["vehicle"] ?? "BO"),
       ],
     ];
@@ -583,8 +612,8 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "receiverDistrictCode" => $this->districtCode($receiver, $two_level),
       "receiverCommuneCode" => (string) ($receiver["commune_code"] ?? ""),
       "serviceCode" => (string) $order["service"],
-      "addonService" => $this->buildAddonService($order),
-      "additionRequest" => [],
+      "addonService" => $this->addons($order, VnpostCatalog::GROUP_ADDON),
+      "additionRequest" => $this->addons($order, VnpostCatalog::GROUP_REQUEST),
       "orgCodeCollect" => $this->orNull($order["org_collect"] ?? ""),
       "orgCodeAccept" => $this->orNull($order["org_accept"] ?? ""),
       "saleOrderCode" => $this->orNull($order["sale_code"] ?? ""),
@@ -612,27 +641,33 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
    *   Cấu hình kết nối.
    * @param array $order
    *   Đơn hàng đã chuẩn hoá.
+   * @param string $affair
+   *   Loại hiệu chỉnh (AffairType).
    *
    * @return array
    *   Payload của /orderCorrection.
    */
-  private function buildCorrection(array $config, array $order): array {
+  private function buildCorrection(array $config, array $order, string $affair): array {
     $sender = $order["sender"] ?? [];
     $receiver = $order["receiver"] ?? [];
     $two_level = !empty($order["is_new_address"]);
 
+    // Nhóm hiệu chỉnh nhận dịch vụ cộng thêm dạng mảng Props thay cho chuỗi
+    // propValue của lệnh tạo đơn.
     $addons = [];
 
-    if ((float) ($order["cod"] ?? 0) > 0) {
-      $addons[] = [
-        "ServiceCode" => self::ADDON_COD,
-        "Props" => [
-          [
-            "PropCode" => self::PROP_COD_AMOUNT,
-            "PropValue" => (string) (int) $order["cod"],
-          ],
-        ],
-      ];
+    foreach ($this->addons($order, VnpostCatalog::GROUP_ADDON) as $addon) {
+      $props = [];
+
+      foreach (explode(";", (string) ($addon["propValue"] ?? "")) as $pair) {
+        [$code, $value] = array_pad(explode(":", $pair, 2), 2, "");
+
+        if ($code !== "") {
+          $props[] = ["PropCode" => $code, "PropValue" => $value === "null" ? "" : $value];
+        }
+      }
+
+      $addons[] = ["ServiceCode" => $addon["code"], "Props" => $props];
     }
 
     return [
@@ -640,7 +675,7 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "SourceCode" => "MYVNP",
       "ServiceCode" => (string) ($order["service"] ?? ""),
       "ItemCode" => (string) ($order["item_code"] ?? ""),
-      "AffairType" => "02",
+      "AffairType" => $affair,
       "OrderCode" => (string) ($order["item_code"] ?? ""),
       "FlagConfig" => "1",
       "Contents" => (string) ($order["content"] ?? ""),
@@ -649,34 +684,37 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
       "POPickupCode" => (string) ($order["org_collect"] ?? ""),
       "PickupDateTime" => "",
       "CODAmount" => (int) ($order["cod"] ?? 0),
-      "Sender" => [
+      "Sender" => $this->withoutMasked([
         "OrgCode" => (string) ($config["shipping_code"] ?? ""),
         "ContractNumber" => (string) ($config["shipping_contract"] ?? ""),
-        "Phone" => (string) ($sender["phone"] ?? ""),
+        "Phone" => $this->localPhone((string) ($sender["phone"] ?? "")),
         "Fullname" => (string) ($sender["name"] ?? ""),
         "Address" => (string) ($sender["address"] ?? ""),
         "Province" => (string) ($sender["province_code"] ?? ""),
         "District" => $this->districtCode($sender, $two_level),
         "Commune" => (string) ($sender["commune_code"] ?? ""),
         "Postcode" => (string) ($sender["commune_code"] ?? ""),
-      ],
-      "Receiver" => [
+      ]),
+      "Receiver" => $this->withoutMasked([
         "OrgCode" => "",
-        "Phone" => (string) ($receiver["phone"] ?? ""),
+        "Phone" => $this->localPhone((string) ($receiver["phone"] ?? "")),
         "Fullname" => (string) ($receiver["name"] ?? ""),
         "Address" => (string) ($receiver["address"] ?? ""),
         "Province" => (string) ($receiver["province_code"] ?? ""),
         "District" => $this->districtCode($receiver, $two_level),
         "Commune" => (string) ($receiver["commune_code"] ?? ""),
         "Postcode" => (string) ($receiver["commune_code"] ?? ""),
-      ],
+      ]),
       "Addons" => $addons,
       "Package" => [
         "Weight" => (string) (int) ($order["weight"] ?? 0),
         "Length" => (string) ($order["length"] ?? ""),
         "Width" => (string) ($order["width"] ?? ""),
         "Height" => (string) ($order["height"] ?? ""),
+        // Volume là trường bắt buộc theo tài liệu dù không tính cước theo thể tích.
+        "Volume" => "",
         "PriceWeight" => (string) (int) ($order["weight"] ?? 0),
+        "DimWeight" => "",
         "IsVolume" => FALSE,
       ],
       "useBCP" => 1,
@@ -684,32 +722,101 @@ class VnpostProvider extends PluginBase implements ShippingProvidersInterface, C
   }
 
   /**
-   * Dựng mảng dịch vụ cộng thêm từ đơn hàng đã chuẩn hoá.
+   * Kiểm tra một giá trị có phải bản đã bị hãng che bằng dấu "+" hay không.
+   *
+   * @param string $value
+   *   Giá trị cần kiểm tra.
+   *
+   * @return bool
+   *   TRUE nếu giá trị chứa đoạn che "++".
+   */
+  public static function isMasked(string $value): bool {
+    return str_contains($value, "++");
+  }
+
+  /**
+   * Các loại hiệu chỉnh được chọn cho đơn ở một trạng thái.
+   *
+   * @param string $status
+   *   Trạng thái hiện tại của đơn.
+   *
+   * @return array
+   *   Mảng AffairType => tên loại, loại mặc định đứng đầu; rỗng khi trạng thái
+   *   này không được hiệu chỉnh.
+   */
+  public static function correctionTypes(string $status): array {
+    if ($status === "" || !isset(self::CORRECTION_TYPES[(int) $status])) {
+      return [];
+    }
+
+    $types = [];
+
+    foreach (self::CORRECTION_TYPES[(int) $status] as $code) {
+      $types[$code] = self::CORRECTION_LABELS[$code];
+    }
+
+    return $types;
+  }
+
+  /**
+   * Bỏ khỏi khối người gửi/nhận các giá trị đang bị hãng che.
+   *
+   * Hãng che SĐT và địa chỉ bằng dấu "+" khi trả danh sách đơn. Gửi ngược
+   * chuỗi đã che lên sẽ ghi đè thông tin thật của bưu gửi, nên bỏ hẳn khoá đó
+   * để hãng giữ nguyên giá trị đang có.
+   *
+   * @param array $party
+   *   Khối Sender hoặc Receiver đã dựng.
+   *
+   * @return array
+   *   Khối đã bỏ các giá trị bị che.
+   */
+  private function withoutMasked(array $party): array {
+    return array_filter(
+      $party,
+      static fn (mixed $value): bool => !is_string($value) || !self::isMasked($value)
+    );
+  }
+
+  /**
+   * Đổi số điện thoại dạng +84 về dạng 0.
+   *
+   * Nhóm API hiệu chỉnh giới hạn số điện thoại 10 ký tự, trong khi hãng trả về
+   * dạng quốc tế +84 dài 12 ký tự.
+   *
+   * @param string $phone
+   *   Số điện thoại.
+   *
+   * @return string
+   *   Số điện thoại dạng trong nước.
+   */
+  private function localPhone(string $phone): string {
+    $phone = preg_replace("/[\s.\-]/", "", $phone) ?? $phone;
+
+    return preg_replace("/^\+?84(?=\d{9}$)/", "0", $phone) ?? $phone;
+  }
+
+  /**
+   * Dựng một nhóm dịch vụ GTGT của đơn hàng đã chuẩn hoá.
    *
    * @param array $order
    *   Đơn hàng đã chuẩn hoá.
+   * @param string $group
+   *   VnpostCatalog::GROUP_ADDON cho addonService, GROUP_REQUEST cho
+   *   additionRequest.
    *
    * @return array
-   *   Mảng addonService, rỗng khi đơn không dùng dịch vụ cộng thêm nào.
+   *   Mảng phần tử {code, propValue}, rỗng khi đơn không dùng dịch vụ nào.
    */
-  private function buildAddonService(array $order): array {
-    $addons = [];
+  private function addons(array $order, string $group): array {
+    $addons = $order["addons"] ?? NULL;
 
-    if ((float) ($order["cod"] ?? 0) > 0) {
-      $addons[] = [
-        "code" => self::ADDON_COD,
-        "propValue" => self::PROP_COD_AMOUNT . ":" . (int) $order["cod"],
-      ];
+    // Tầng gọi cũ chưa truyền "addons" thì dựng lại từ COD và khai giá.
+    if (!is_array($addons)) {
+      $addons = VnpostCatalog::decode("", (float) ($order["cod"] ?? 0), (float) ($order["insurance"] ?? 0));
     }
 
-    if ((float) ($order["insurance"] ?? 0) > 0) {
-      $addons[] = [
-        "code" => self::ADDON_INSURANCE,
-        "propValue" => self::PROP_INSURANCE_VALUE . ":" . (int) $order["insurance"],
-      ];
-    }
-
-    return $addons;
+    return VnpostCatalog::payload($addons, $group);
   }
 
   /**

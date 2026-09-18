@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\shipping_integration\Form;
 
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityInterface;
@@ -14,7 +16,10 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\shipping_integration\Catalog\VnpostCatalog;
+use Drupal\shipping_integration\Plugin\Providers\VnpostProvider;
 use Drupal\shipping_integration\Service\AddressOptions;
+use Drupal\shipping_integration\Service\GetConfigShipping;
 use Drupal\shipping_integration\Service\HandleShipping;
 use Drupal\shipping_integration\ShippingOrderService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -22,8 +27,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Form tạo và sửa đơn vận chuyển, dựng theo màn khai đơn của MyVNPost.
  *
- * Bố cục hai cột: bên trái là các bên tham gia và dịch vụ, bên phải là hàng
- * hoá và yêu cầu khi phát, cuối trang là thanh tổng hợp cước dính đáy màn hình.
+ * Bố cục hai cột: bên trái là các bên tham gia, bên phải là hàng hoá, dịch vụ
+ * và yêu cầu khi phát, cuối trang là thanh tổng hợp cước dính đáy màn hình.
  *
  * Form chỉ khai những trường /CreateOrder thực sự nhận. Các khối riêng của cổng
  * MyVNPost mà API không có (chi tiết hàng hoá, ảnh đính kèm, tủ PUDO) cố tình
@@ -65,9 +70,15 @@ final class ShippingOrderForm extends ContentEntityForm {
    *
    * Kết nối cần select gọn thay vì ô tự động hoàn thành, còn địa chỉ cần select
    * liên tầng lọc theo cấp cha nên không dùng lại widget entity reference được.
+   * Dịch vụ lọc theo hợp đồng của kết nối, còn COD và khai giá nay là thuộc
+   * tính của dịch vụ GTGT nên được chép lại từ khối dịch vụ GTGT khi lưu.
    */
   private const CUSTOM_FIELDS = [
     "field_so_config",
+    "field_so_service",
+    "field_so_addons",
+    "field_so_cod",
+    "field_so_insurance",
     "field_so_sender_province",
     "field_so_sender_district",
     "field_so_sender_commune",
@@ -90,9 +101,15 @@ final class ShippingOrderForm extends ContentEntityForm {
   private const CONNECTION_PATH = ["layout", "left", "sender", "body", "connection"];
 
   /**
+   * Đường dẫn tới thẻ dịch vụ trong mảng form, dựng lại khi đổi kết nối hoặc
+   * đổi dịch vụ vì danh sách dịch vụ GTGT phụ thuộc cả hai.
+   */
+  private const SERVICE_PATH = ["layout", "right", "service"];
+
+  /**
    * Đường dẫn tới bảng cước các dịch vụ trong mảng form.
    */
-  private const QUOTES_PATH = ["layout", "left", "service", "body", "quotes"];
+  private const QUOTES_PATH = ["layout", "right", "service", "body", "quotes"];
 
   /**
    * Các ô cần thiết để hỏi cước, dùng giới hạn phạm vi kiểm tra của nút hỏi.
@@ -104,8 +121,7 @@ final class ShippingOrderForm extends ContentEntityForm {
     ["field_so_width"],
     ["field_so_height"],
     ["field_so_vehicle"],
-    ["field_so_cod"],
-    ["field_so_insurance"],
+    ["addons"],
     ["sender_province"],
     ["sender_district"],
     ["sender_commune"],
@@ -201,8 +217,9 @@ final class ShippingOrderForm extends ContentEntityForm {
 
     $this->buildSenderCard($form, $form_state, $two_level);
     $this->buildReceiverCard($form, $form_state, $two_level);
-    $this->buildServiceCard($form, $form_state);
+    // Cột phải xếp theo thứ tự dựng: hàng hoá, dịch vụ rồi yêu cầu bổ sung.
     $this->buildParcelCard($form);
+    $this->buildServiceCard($form, $form_state);
     $this->buildRequestCard($form);
     $this->buildSummary($form);
 
@@ -231,9 +248,9 @@ final class ShippingOrderForm extends ContentEntityForm {
       "#required" => TRUE,
       "#parents" => ["field_so_config"],
       "#wrapper_attributes" => ["class" => ["col-12"]],
+      // Đổi kết nối là đổi hợp đồng, nên dựng lại cả thẻ dịch vụ.
       "#ajax" => [
         "callback" => "::refreshConnection",
-        "wrapper" => "shipping-connection-info",
         "event" => "change",
       ],
     ];
@@ -304,10 +321,10 @@ final class ShippingOrderForm extends ContentEntityForm {
   }
 
   /**
-   * Dựng khối chọn dịch vụ và dịch vụ cộng thêm.
+   * Dựng khối chọn dịch vụ và dịch vụ GTGT.
    *
-   * COD và khai giá chính là hai dịch vụ cộng thêm mà plugin đang gửi lên
-   * (GTG021/PROP0018 và GTG008/PROP0026) nên xếp chung một khối với dịch vụ.
+   * Danh sách dịch vụ lọc theo hợp đồng của kết nối đang chọn; dịch vụ GTGT
+   * là phần giao giữa những gì dịch vụ chính cho phép và hợp đồng cho dùng.
    *
    * @param array $form
    *   Mảng form đang dựng.
@@ -316,12 +333,39 @@ final class ShippingOrderForm extends ContentEntityForm {
    */
   private function buildServiceCard(array &$form, FormStateInterface $form_state): void {
     $card = $this->card($this->t("Service"));
+    $card["#attributes"]["id"] = "shipping-service-card";
 
-    $card["body"]["field_so_service"] = $this->tune($form, "field_so_service", [
+    $contract = $this->contract($form_state);
+    $service = $this->currentValue($form_state, "field_so_service");
+    $options = VnpostCatalog::serviceOptions($contract["services"]);
+
+    // Đơn cũ đang giữ dịch vụ ngoài hợp đồng (hoặc ngoài danh mục) vẫn phải
+    // mở ra sửa được, nên giữ lại lựa chọn đó.
+    $stored = $this->fieldValue("field_so_service");
+
+    if ($stored !== "" && !isset($options[$stored])) {
+      $options[$stored] = VnpostCatalog::serviceOptions()[$stored] ?? $stored;
+    }
+
+    if (!isset($options[$service])) {
+      $service = "";
+    }
+
+    $card["body"]["field_so_service"] = [
+      "#type" => "select",
       "#title" => $this->t("Service name"),
+      "#options" => $options,
+      "#empty_option" => $this->t("- Select -"),
+      "#default_value" => $service,
       "#required" => TRUE,
+      "#parents" => ["field_so_service"],
       "#wrapper_attributes" => ["class" => ["col-md-8"]],
-    ]);
+      "#ajax" => [
+        "callback" => "::refreshService",
+        "wrapper" => "shipping-service-card",
+        "event" => "change",
+      ],
+    ];
     $card["body"]["field_so_vehicle"] = $this->tune($form, "field_so_vehicle", [
       "#title" => $this->t("Vehicle"),
       "#wrapper_attributes" => ["class" => ["col-md-4"]],
@@ -344,26 +388,159 @@ final class ShippingOrderForm extends ContentEntityForm {
     ];
 
     $card["body"]["quotes"] = $this->quoteTable($form_state);
+    $card["body"]["addons"] = $this->addonGroup($form_state, $service, $contract["addons"]);
 
-    $card["body"]["addon"] = [
-      "#type" => "html_tag",
-      "#tag" => "div",
-      "#attributes" => ["class" => ["col-12", "shipping-subheader"]],
-      "#value" => $this->t("Addon services"),
+    NestedArray::setValue($form, self::SERVICE_PATH, $this->ordered($card));
+  }
+
+  /**
+   * Dựng khối tích chọn dịch vụ GTGT của dịch vụ đang chọn.
+   *
+   * Mỗi dịch vụ GTGT là một ô tích, thuộc tính của nó chỉ hiện khi đã tích.
+   * Chia hai nhóm đúng như payload của hãng: dịch vụ cộng thêm và yêu cầu thêm.
+   *
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   * @param string $service
+   *   Mã dịch vụ đang chọn.
+   * @param string[] $allowed
+   *   Mã dịch vụ GTGT được phép theo hợp đồng, rỗng là không giới hạn.
+   *
+   * @return array
+   *   Phần form của khối dịch vụ GTGT.
+   */
+  private function addonGroup(FormStateInterface $form_state, string $service, array $allowed): array {
+    $group = [
+      "#type" => "container",
+      "#tree" => TRUE,
+      "#parents" => ["addons"],
+      "#attributes" => ["class" => ["col-12", "row", "g-2", "m-0", "p-0", "shipping-addons"]],
     ];
 
-    $card["body"]["field_so_cod"] = $this->tune($form, "field_so_cod", [
-      "#title" => $this->t("COD amount"),
-      "#wrapper_attributes" => ["class" => ["col-md-6"]],
-      "#attributes" => ["class" => ["shipping-cod-input"], "min" => 0],
-    ]);
-    $card["body"]["field_so_insurance"] = $this->tune($form, "field_so_insurance", [
-      "#title" => $this->t("Insurance value"),
-      "#wrapper_attributes" => ["class" => ["col-md-6"]],
-      "#attributes" => ["min" => 0],
-    ]);
+    if ($service === "") {
+      $group["empty"] = $this->hint($this->t("Choose a service to see its addon services."));
 
-    NestedArray::setValue($form, ["layout", "left", "service"], $this->ordered($card));
+      return $group;
+    }
+
+    $addons = VnpostCatalog::addonsFor($service, $allowed);
+
+    if ($addons === []) {
+      $group["empty"] = $this->hint($this->t("This service has no addon service available under the contract of the connection."));
+
+      return $group;
+    }
+
+    $current = $this->currentAddons($form_state);
+    $headers = [
+      VnpostCatalog::GROUP_ADDON => $this->t("Addon services"),
+      VnpostCatalog::GROUP_REQUEST => $this->t("Additional charge requests"),
+    ];
+
+    foreach ($headers as $key => $header) {
+      $codes = array_keys(array_filter($addons, static fn (array $addon): bool => $addon["group"] === $key));
+
+      if ($codes === []) {
+        continue;
+      }
+
+      $group["header_" . $key] = [
+        "#type" => "html_tag",
+        "#tag" => "div",
+        "#attributes" => ["class" => ["col-12", "shipping-subheader"]],
+        "#value" => $header,
+      ];
+
+      foreach ($codes as $code) {
+        $group[$code] = $this->addonElement($code, $addons[$code], $current[$code] ?? NULL);
+      }
+    }
+
+    return $group;
+  }
+
+  /**
+   * Dựng ô tích và các ô thuộc tính của một dịch vụ GTGT.
+   *
+   * @param string $code
+   *   Mã dịch vụ GTGT.
+   * @param array $addon
+   *   Định nghĩa dịch vụ GTGT trong danh mục.
+   * @param array|null $values
+   *   Thuộc tính đang khai, NULL khi dịch vụ chưa được tích.
+   *
+   * @return array
+   *   Phần form của dịch vụ GTGT.
+   */
+  private function addonElement(string $code, array $addon, ?array $values): array {
+    $element = [
+      "#type" => "container",
+      "#attributes" => ["class" => ["col-12", "row", "g-2", "m-0", "p-0", "shipping-addon"]],
+      "enabled" => [
+        "#type" => "checkbox",
+        "#title" => $code . " - " . $addon["label"],
+        "#default_value" => $values !== NULL,
+        "#wrapper_attributes" => ["class" => ["col-12", "shipping-checkbox-field"]],
+      ],
+    ];
+
+    if ($code === VnpostCatalog::ADDON_COD) {
+      $element["enabled"]["#attributes"]["class"][] = "shipping-cod-toggle";
+    }
+
+    $visible = [
+      "visible" => [
+        ':input[name="addons[' . $code . '][enabled]"]' => ["checked" => TRUE],
+      ],
+    ];
+
+    foreach ($addon["props"] as $prop => $definition) {
+      // Thuộc tính do hãng tự tính, module luôn gửi null nên không cho khai.
+      if (!empty($definition["fixed"])) {
+        continue;
+      }
+
+      $value = (string) ($values[$prop] ?? "");
+
+      $input = match ($definition["type"]) {
+        "number" => [
+          "#type" => "number",
+          "#min" => 0,
+          "#default_value" => $value,
+        ],
+        "date" => [
+          "#type" => "date",
+          "#default_value" => $this->isoDate($value),
+        ],
+        "flag" => [
+          "#type" => "checkbox",
+          "#default_value" => $value === "1",
+          "#wrapper_attributes" => ["class" => ["col-md-6", "ps-4", "shipping-checkbox-field"]],
+        ],
+        default => [
+          "#type" => "textfield",
+          "#default_value" => $value,
+        ],
+      } + [
+        "#title" => $definition["label"],
+        "#wrapper_attributes" => ["class" => ["col-md-6", "ps-4"]],
+        "#states" => $visible,
+      ];
+
+      // Bắt buộc chỉ khi đã tích dịch vụ nên không dùng #required, chỉ gắn
+      // dấu sao cho nhãn rồi kiểm tra ở validateForm().
+      if (!empty($definition["required"])) {
+        $input["#label_attributes"]["class"] = ["js-form-required", "form-required"];
+      }
+
+      if ($prop === VnpostCatalog::PROP_COD_AMOUNT) {
+        $input["#attributes"]["class"][] = "shipping-cod-input";
+      }
+
+      $element[$prop] = $input;
+    }
+
+    return $element;
   }
 
   /**
@@ -587,6 +764,21 @@ final class ShippingOrderForm extends ContentEntityForm {
       $actions["draft"] = $this->carrierButton($actions["submit"], "draft", $this->t("Save draft"), "btn-outline-primary", 30);
     }
     else {
+      // Chỉ liệt kê loại mà trạng thái hiện tại của đơn được phép gửi.
+      $types = VnpostProvider::correctionTypes($this->fieldValue("field_so_status"));
+
+      if ($types !== []) {
+        $actions["correction_type"] = [
+          "#type" => "select",
+          "#title" => $this->t("Correction type"),
+          "#title_display" => "invisible",
+          "#options" => $types,
+          "#default_value" => array_key_first($types),
+          "#weight" => 19,
+          "#attributes" => ["class" => ["form-select", "w-auto", "shipping-correction-type"]],
+        ];
+      }
+
       $actions["correct"] = $this->carrierButton($actions["submit"], "correct", $this->t("Correct order"), "btn-primary", 20);
     }
 
@@ -631,11 +823,28 @@ final class ShippingOrderForm extends ContentEntityForm {
       }
     }
 
+    $this->validateService($form_state);
+
     // Hãng từ chối đơn không có khối lượng nên chặn ngay tại form.
     $weight = (int) ($form_state->getValue(["field_so_weight", 0, "value"]) ?? 0);
 
     if ($weight <= 0) {
       $form_state->setErrorByName("field_so_weight", $this->t("The total weight must be greater than 0 gram."));
+    }
+
+    // Hãng che SĐT và địa chỉ bằng dấu "+" và không bao giờ trả lại bản thật,
+    // mà lệnh hiệu chỉnh lại bắt buộc có đủ, nên người dùng phải gõ lại.
+    if (($form_state->getTriggeringElement()["#shipping_action"] ?? "") === "correct") {
+      foreach (["sender", "receiver"] as $party) {
+        foreach (["phone", "address"] as $field) {
+          $name = "field_so_{$party}_{$field}";
+          $value = (string) ($form_state->getValue([$name, 0, "value"]) ?? "");
+
+          if (VnpostProvider::isMasked($value)) {
+            $form_state->setErrorByName($name, $this->t("This value is masked by VN-Post. Enter the full value before sending a correction."));
+          }
+        }
+      }
     }
   }
 
@@ -653,6 +862,8 @@ final class ShippingOrderForm extends ContentEntityForm {
 
     $entity->set("field_so_is_new_address", $two_level);
     $entity->set("field_so_config", $form_state->getValue("field_so_config") ?: NULL);
+    $entity->set("field_so_service", $form_state->getValue("field_so_service") ?: NULL);
+    $this->applyAddons($entity, $this->submittedAddons($form_state));
 
     foreach (["sender", "receiver"] as $party) {
       $entity->set("field_so_{$party}_province", $form_state->getValue("{$party}_province") ?: NULL);
@@ -725,7 +936,11 @@ final class ShippingOrderForm extends ContentEntityForm {
       "fee" => $this->handleShipping->calculateFee($this->entity),
       "create" => $this->handleShipping->createOrder($this->entity, FALSE),
       "draft" => $this->handleShipping->createOrder($this->entity, TRUE),
-      "correct" => $this->handleShipping->updateOrder($this->entity),
+      "correct" => $this->handleShipping->updateOrder(
+        $this->entity,
+        $form_state->get("shipping_previous"),
+        (string) $form_state->getValue("correction_type", ""),
+      ),
       default => NULL,
     };
 
@@ -748,6 +963,21 @@ final class ShippingOrderForm extends ContentEntityForm {
   }
 
   /**
+   * Chụp thông tin đang lưu của đơn trước khi form ghi đè.
+   *
+   * @param array $form
+   *   Mảng form.
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   */
+  public function rememberPrevious(array &$form, FormStateInterface $form_state): void {
+    /** @var \Drupal\shipping_integration\ShippingOrderInterface $order */
+    $order = $this->entity;
+
+    $form_state->set("shipping_previous", $this->handleShipping->snapshot($order));
+  }
+
+  /**
    * Trả về khối địa chỉ vừa dựng lại sau khi đổi cấp cha.
    *
    * @param array $form
@@ -765,7 +995,26 @@ final class ShippingOrderForm extends ContentEntityForm {
   }
 
   /**
-   * Trả về khối thông tin kết nối vừa dựng lại sau khi đổi tài khoản.
+   * Dựng lại khối thông tin kết nối và thẻ dịch vụ sau khi đổi tài khoản.
+   *
+   * @param array $form
+   *   Mảng form đã dựng lại.
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   Lệnh thay khối thông tin kết nối và thẻ dịch vụ.
+   */
+  public function refreshConnection(array $form, FormStateInterface $form_state): AjaxResponse {
+    $response = new AjaxResponse();
+    $response->addCommand(new ReplaceCommand("#shipping-connection-info", NestedArray::getValue($form, self::CONNECTION_PATH) ?? []));
+    $response->addCommand(new ReplaceCommand("#shipping-service-card", NestedArray::getValue($form, self::SERVICE_PATH) ?? []));
+
+    return $response;
+  }
+
+  /**
+   * Trả về thẻ dịch vụ vừa dựng lại sau khi đổi dịch vụ.
    *
    * @param array $form
    *   Mảng form đã dựng lại.
@@ -773,10 +1022,10 @@ final class ShippingOrderForm extends ContentEntityForm {
    *   Trạng thái form.
    *
    * @return array
-   *   Phần form của khối thông tin kết nối.
+   *   Phần form của thẻ dịch vụ.
    */
-  public function refreshConnection(array $form, FormStateInterface $form_state): array {
-    return NestedArray::getValue($form, self::CONNECTION_PATH) ?? [];
+  public function refreshService(array $form, FormStateInterface $form_state): array {
+    return NestedArray::getValue($form, self::SERVICE_PATH) ?? [];
   }
 
   /**
@@ -801,9 +1050,11 @@ final class ShippingOrderForm extends ContentEntityForm {
     // Bỏ trống mã dịch vụ thì hãng trả cước của tất cả dịch vụ.
     $order->set("field_so_service", NULL);
 
-    foreach (["weight", "length", "width", "height", "vehicle", "cod", "insurance"] as $name) {
+    foreach (["weight", "length", "width", "height", "vehicle"] as $name) {
       $order->set("field_so_" . $name, $form_state->getValue(["field_so_" . $name, 0, "value"]) ?: NULL);
     }
+
+    $this->applyAddons($order, $this->submittedAddons($form_state));
 
     foreach (["sender", "receiver"] as $party) {
       $order->set("field_so_{$party}_province", $form_state->getValue("{$party}_province") ?: NULL);
@@ -990,7 +1241,9 @@ final class ShippingOrderForm extends ContentEntityForm {
           ? (string) $config->get("field_si_contract")->value
           : $this->t("none"),
       ]);
-      $lines[] = $this->t("Payment method: pay now");
+      $lines[] = $this->t("Payment method: @method", [
+        "@method" => $this->paymentLabel($config),
+      ]);
     }
 
     $info = [
@@ -1011,6 +1264,225 @@ final class ShippingOrderForm extends ContentEntityForm {
     }
 
     return $info;
+  }
+
+  /**
+   * Kiểm tra dịch vụ và dịch vụ GTGT đang khai.
+   *
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   */
+  private function validateService(FormStateInterface $form_state): void {
+    $service = (string) $form_state->getValue("field_so_service", "");
+    $contract = $this->contract($form_state);
+
+    // Đơn cũ giữ nguyên dịch vụ đang có thì cho qua, chỉ chặn khi chọn mới
+    // một dịch vụ ngoài hợp đồng.
+    if ($service !== "" && $contract["services"] !== [] && !in_array($service, $contract["services"], TRUE)
+      && $service !== $this->fieldValue("field_so_service")) {
+      $form_state->setErrorByName("field_so_service", $this->t("The service @code is not in the contract of this connection.", ["@code" => $service]));
+    }
+
+    foreach ($this->submittedAddons($form_state) as $code => $values) {
+      foreach (VnpostCatalog::ADDONS[$code]["props"] ?? [] as $prop => $definition) {
+        if (empty($definition["required"]) || !empty($definition["fixed"])) {
+          continue;
+        }
+
+        $value = $values[$prop] ?? "";
+        $missing = $definition["type"] === "number" ? (float) $value <= 0 : $value === "";
+
+        if ($missing) {
+          $form_state->setErrorByName("addons][{$code}][{$prop}", $this->t("Enter @prop for the addon service @addon.", [
+            "@prop" => $definition["label"],
+            "@addon" => $code . " - " . VnpostCatalog::ADDONS[$code]["label"],
+          ]));
+        }
+      }
+    }
+  }
+
+  /**
+   * Dịch vụ và dịch vụ GTGT được phép theo hợp đồng của kết nối đang chọn.
+   *
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   *
+   * @return array
+   *   Mảng gồm "services" và "addons", danh sách rỗng là không giới hạn.
+   */
+  private function contract(FormStateInterface $form_state): array {
+    $id = $this->currentValue($form_state, "field_so_config");
+    $config = $id === "" ? NULL : $this->entityTypeManager->getStorage("taxonomy_term")->load($id);
+
+    if (!$config instanceof FieldableEntityInterface) {
+      return ["services" => [], "addons" => []];
+    }
+
+    return [
+      "services" => GetConfigShipping::values($config, "field_si_services"),
+      "addons" => GetConfigShipping::values($config, "field_si_addons"),
+    ];
+  }
+
+  /**
+   * Dịch vụ GTGT đang khai, ưu tiên dữ liệu vừa gửi lên.
+   *
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   *
+   * @return array
+   *   Mảng mã dịch vụ GTGT => [mã thuộc tính => giá trị].
+   */
+  private function currentAddons(FormStateInterface $form_state): array {
+    if (is_array($form_state->getValue("addons"))) {
+      return $this->submittedAddons($form_state);
+    }
+
+    return VnpostCatalog::decode(
+      $this->fieldValue("field_so_addons"),
+      (float) $this->fieldValue("field_so_cod"),
+      (float) $this->fieldValue("field_so_insurance"),
+    );
+  }
+
+  /**
+   * Đọc các dịch vụ GTGT đã tích trên form.
+   *
+   * Form chỉ dựng ô cho những dịch vụ GTGT hợp lệ với dịch vụ đang chọn nên
+   * giá trị gửi lên cũng chỉ gồm những mã đó.
+   *
+   * @param FormStateInterface $form_state
+   *   Trạng thái form.
+   *
+   * @return array
+   *   Mảng mã dịch vụ GTGT => [mã thuộc tính => giá trị].
+   */
+  private function submittedAddons(FormStateInterface $form_state): array {
+    $submitted = $form_state->getValue("addons");
+    $addons = [];
+
+    foreach (is_array($submitted) ? $submitted : [] as $code => $values) {
+      if (!isset(VnpostCatalog::ADDONS[$code]) || !is_array($values) || empty($values["enabled"])) {
+        continue;
+      }
+
+      $props = [];
+
+      foreach (VnpostCatalog::ADDONS[$code]["props"] as $prop => $definition) {
+        if (!empty($definition["fixed"])) {
+          continue;
+        }
+
+        $value = trim((string) ($values[$prop] ?? ""));
+
+        $value = match ($definition["type"]) {
+          "flag" => $value !== "" && $value !== "0" ? "1" : "0",
+          "number" => $value === "" ? "" : (string) (int) $value,
+          "date" => $this->carrierDate($value),
+          default => $value,
+        };
+
+        if ($value !== "") {
+          $props[$prop] = $value;
+        }
+      }
+
+      $addons[(string) $code] = $props;
+    }
+
+    return $addons;
+  }
+
+  /**
+   * Ghi dịch vụ GTGT vào đơn, kèm COD và khai giá ở hai field riêng.
+   *
+   * Danh sách đơn, trang chi tiết và webhook vẫn đọc tiền thu hộ và giá trị
+   * khai giá từ field_so_cod và field_so_insurance nên phải chép sang.
+   *
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $order
+   *   Đơn hàng.
+   * @param array $addons
+   *   Mảng mã dịch vụ GTGT => [mã thuộc tính => giá trị].
+   */
+  private function applyAddons(FieldableEntityInterface $order, array $addons): void {
+    $order->set("field_so_addons", $addons === [] ? NULL : json_encode($addons, JSON_UNESCAPED_UNICODE));
+    $order->set("field_so_cod", $addons[VnpostCatalog::ADDON_COD][VnpostCatalog::PROP_COD_AMOUNT] ?? NULL);
+    $order->set("field_so_insurance", $addons[VnpostCatalog::ADDON_INSURANCE][VnpostCatalog::PROP_INSURANCE_VALUE] ?? NULL);
+  }
+
+  /**
+   * Đổi ngày của ô chọn ngày (Y-m-d) sang dạng dd/mm/yyyy hãng dùng.
+   *
+   * @param string $value
+   *   Ngày dạng Y-m-d.
+   *
+   * @return string
+   *   Ngày dạng d/m/Y, rỗng khi không đọc được.
+   */
+  private function carrierDate(string $value): string {
+    $date = \DateTime::createFromFormat("!Y-m-d", $value);
+
+    return $date === FALSE ? "" : $date->format("d/m/Y");
+  }
+
+  /**
+   * Đổi ngày dạng dd/mm/yyyy đã lưu về dạng Y-m-d cho ô chọn ngày.
+   *
+   * @param string $value
+   *   Ngày dạng d/m/Y.
+   *
+   * @return string
+   *   Ngày dạng Y-m-d, rỗng khi không đọc được.
+   */
+  private function isoDate(string $value): string {
+    $date = \DateTime::createFromFormat("!d/m/Y", $value);
+
+    return $date === FALSE ? "" : $date->format("Y-m-d");
+  }
+
+  /**
+   * Dòng gợi ý nhỏ trong một thẻ.
+   *
+   * @param \Drupal\Core\StringTranslation\TranslatableMarkup $text
+   *   Nội dung gợi ý.
+   *
+   * @return array
+   *   Phần tử render.
+   */
+  private function hint($text): array {
+    return [
+      "#type" => "html_tag",
+      "#tag" => "div",
+      "#attributes" => ["class" => ["col-12", "small", "text-muted"]],
+      "#value" => $text,
+    ];
+  }
+
+  /**
+   * Nhãn loại thanh toán theo hợp đồng của term kết nối.
+   *
+   * Term cũ chưa khai loại thanh toán thì coi như thanh toán ngay, khớp với
+   * giá trị mặc định của field.
+   *
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $config
+   *   Term cấu hình kết nối.
+   *
+   * @return string
+   *   Nhãn hiển thị của loại thanh toán.
+   */
+  private function paymentLabel(FieldableEntityInterface $config): string {
+    if (!$config->hasField("field_si_type_payment")) {
+      return "";
+    }
+
+    $field = $config->get("field_si_type_payment");
+    $value = ((string) $field->value) ?: GetConfigShipping::PAYMENT_DEFAULT;
+    $options = $field->getFieldDefinition()
+      ->getFieldStorageDefinition()
+      ->getSetting("allowed_values");
+
+    return (string) ($options[$value] ?? $value);
   }
 
   /**
@@ -1154,6 +1626,11 @@ final class ShippingOrderForm extends ContentEntityForm {
     $submit["#shipping_action"] = $action;
     $submit["#submit"] = [...($submit["#submit"] ?? []), "::callCarrier"];
     $submit["#attributes"]["class"] = ["btn", $class];
+
+    // Chụp dữ liệu cũ trước bước lưu, để hãng từ chối thì còn trả đơn về.
+    if ($action === "correct") {
+      array_unshift($submit["#submit"], "::rememberPrevious");
+    }
 
     if ($action === "create") {
       $submit["#button_type"] = "primary";

@@ -14,12 +14,12 @@ viết thêm một plugin, không phải sửa gì ở tầng entity hay giao di
 | `shipping_type` (content) | Danh sách hãng: VN-Post, Giao hàng nhanh… `field_code` giữ mã plugin (`vnpost`). |
 | `shipping_order` + `shipping_order_type` | Đơn vận chuyển. Mỗi hãng một bundle riêng (`vnpost`) nên field của hãng này không lẫn vào hãng kia. |
 | `shipping_address` + `shipping_address_type` | Danh mục địa chỉ đồng bộ từ hãng. Bundle `province` / `district` / `commune`, `field_is_new_address` phân biệt bộ 2 cấp (sau sáp nhập) với bộ 3 cấp cũ. |
-| Từ vựng `shipping_integration` | Mỗi term là một tài khoản kết nối: trỏ tới `shipping_type`, giữ host, tài khoản, mã khách hàng, hợp đồng và token. |
+| Từ vựng `shipping_integration` | Mỗi term là một tài khoản kết nối: trỏ tới `shipping_type`, giữ host, tài khoản, mã khách hàng, hợp đồng, token và danh sách dịch vụ / dịch vụ GTGT được dùng theo hợp đồng. |
 
 ## Cài đặt và cấu hình
 
-1. Chạy `drush updb` (module đã bật từ trước nên bộ cấu hình mới nạp qua
-   `shipping_integration_update_10001()`), rồi `drush cr`.
+1. Bật module (`drush en shipping_integration`), rồi `drush cr`. Module không
+   có update hook: cấu trúc dữ liệu đổi thì gỡ module và cài lại.
 2. Tạo hãng tại `/admin/content/shipping-type`, đặt **Mã provider** = `vnpost`.
 3. Tạo term kết nối tại từ vựng *Config shipping integration* với:
    - **Host**: `https://my-uat.vnpost.vn/MYVNP_API` (UAT) hoặc
@@ -27,6 +27,9 @@ viết thêm một plugin, không phải sửa gì ở tầng entity hay giao di
    - **Username / Password**: tài khoản MyVNPost.
    - **Mã khách hàng**: mã KH CMS VNPost cấp (ví dụ `T000180585`).
    - **Mã hợp đồng**: để trống nếu không có.
+   - **Dịch vụ theo hợp đồng** (`field_si_services`) và **Dịch vụ GTGT theo
+     hợp đồng** (`field_si_addons`): tích đúng những gì hợp đồng với VNPost
+     cho dùng. Để trống một field nghĩa là không giới hạn ở tầng đó.
    Lưu term là module tự gọi `/GetAccessToken` và ghi token vào `field_si_token`.
 4. Đồng bộ danh mục địa chỉ: vào `/admin/content/shipping-address` và bấm nút
    **Đồng bộ địa chỉ: {tên term}** ở đầu trang (mỗi term cấu hình kết nối có
@@ -87,6 +90,39 @@ kết nối (`field_si_contract`) và hiện ngay dưới ô chọn kết nối.
 Field hệ thống (số hiệu bưu gửi, trạng thái, cước, hành trình, vận đơn, dữ liệu
 thô…) bị gỡ khỏi form: chỉ hãng và module ghi vào đó.
 
+### Dịch vụ và dịch vụ GTGT
+
+Danh mục của hãng nằm ở `src/Catalog/VnpostCatalog.php`, khai tay theo tài
+liệu vì hãng không có API tra cứu, gồm ba tầng:
+
+1. **Sản phẩm dịch vụ** trong nước (`serviceCode`): CTN001, CTN007, CTN009,
+   ETN011, ETN013, ETN031, ETN037, PTN001.
+2. **Dịch vụ GTGT được phép đi kèm từng sản phẩm**, chia hai nhóm theo payload
+   `/CreateOrder`: *Dịch vụ cộng thêm* gửi trong `addonService`, *Yêu cầu
+   thêm* (GTG070 thu phí hủy đơn, GTG071 thu hộ phí ship) gửi trong
+   `additionRequest`.
+3. **Thuộc tính của từng dịch vụ GTGT** (`PROPxxxx`), gửi dạng
+   `PROP1:giá trị;PROP2:null` — thuộc tính không khai vẫn phải có mặt với giá
+   trị `null` theo đúng tài liệu.
+
+Trên form, ô **Dịch vụ** chỉ liệt kê dịch vụ có trong hợp đồng của kết nối
+đang chọn; chọn dịch vụ xong thì khối bên dưới hiện đúng các dịch vụ GTGT mà
+dịch vụ đó cho phép *và* hợp đồng cho dùng. Mỗi dịch vụ GTGT là một ô tích, tích
+vào mới hiện ô nhập thuộc tính; thuộc tính bắt buộc (số tiền COD, giá trị khai
+giá, số/ngày hoá đơn, phí hủy đơn) được kiểm tra khi lưu. Đổi kết nối hoặc đổi
+dịch vụ thì cả thẻ dịch vụ dựng lại qua AJAX.
+
+Lựa chọn lưu vào `field_so_addons` dạng JSON `{mã GTGT: {mã thuộc tính: giá
+trị}}`. COD (`GTG021`/`PROP0018`) và khai giá (`GTG008`/`PROP0026`) vẫn được
+chép sang `field_so_cod`, `field_so_insurance` để danh sách, trang chi tiết và
+webhook không phải đổi. Đơn tạo trước khi có field này được đọc lại từ hai
+field đó; đơn kéo về từ hãng lấy dịch vụ GTGT từ `addonService` /
+`additionRequest` trong bản ghi.
+
+Hãng mở thêm dịch vụ hay thuộc tính thì chỉ cần sửa các hằng trong
+`VnpostCatalog` — `field_so_service` và hai field hợp đồng đều đọc danh sách từ
+đó qua `allowed_values_function`.
+
 ## Ánh xạ sang API MyVNPost
 
 | Chức năng | Endpoint |
@@ -112,8 +148,9 @@ Xác thực bằng header `token` (không phải `Authorization: Bearer`). Khi h
 lên là hằng `"VNPOST"` theo đúng quy định của tài liệu; đơn 3 cấp gửi mã huyện
 thật.
 
-Dịch vụ cộng thêm được sinh từ field của đơn: COD → `GTG021`/`PROP0018`, khai
-giá → `GTG008`/`PROP0026`.
+Dịch vụ GTGT được sinh từ `field_so_addons` qua `VnpostCatalog::payload()`:
+nhóm cộng thêm vào `addonService`, nhóm yêu cầu thêm vào `additionRequest`,
+lệnh hiệu chỉnh nhận nhóm cộng thêm dưới dạng mảng `Props`.
 
 ## Webhook
 

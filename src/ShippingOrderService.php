@@ -2,6 +2,7 @@
 
 namespace Drupal\shipping_integration;
 
+use Drupal\shipping_integration\Catalog\VnpostCatalog;
 use Drupal\shipping_integration\Service\GetConfigShipping;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
@@ -50,7 +51,7 @@ class ShippingOrderService {
    *   Bundle đơn hàng cần lấy.
    *
    * @return array
-   *   Mảng gồm orders, date, status, config_id, page_size.
+   *   Mảng gồm orders, date, status, config_id, page_size và các danh mục chọn.
    */
   public function getOrders(Request $request, string $bundle): array {
     $storage = $this->entityTypeManager->getStorage("shipping_order");
@@ -133,7 +134,9 @@ class ShippingOrderService {
       return [];
     }
 
-    return $definitions[$field]->getSetting("allowed_values") ?? [];
+    // Đi qua options_allowed_values() để đọc được cả field lấy danh sách từ
+    // hàm (allowed_values_function) như field dịch vụ vận chuyển.
+    return options_allowed_values($definitions[$field]->getFieldStorageDefinition());
   }
 
   /**
@@ -259,6 +262,7 @@ class ShippingOrderService {
       "content" => $this->value($order, "field_so_content"),
       "cod" => (float) $this->value($order, "field_so_cod"),
       "insurance" => (float) $this->value($order, "field_so_insurance"),
+      "addons" => $this->addonLines($order),
       "main_fee" => (float) $this->value($order, "field_so_main_fee"),
       "vas_fee" => (float) $this->value($order, "field_so_vas_fee"),
       "total_fee" => (float) $this->value($order, "field_so_total_fee"),
@@ -267,6 +271,40 @@ class ShippingOrderService {
       "history" => $this->history($order),
       "label_file" => $this->labelUrl($order),
     ];
+  }
+
+  /**
+   * Mô tả từng dịch vụ GTGT của đơn kèm thuộc tính đã khai.
+   *
+   * @param \Drupal\shipping_integration\ShippingOrderInterface $order
+   *   Đơn hàng cần đọc.
+   *
+   * @return string[]
+   *   Mỗi dòng một dịch vụ, ví dụ "GTG021 - Phát hàng thu tiền COD (Số tiền
+   *   COD: 200000)".
+   */
+  private function addonLines(ShippingOrderInterface $order): array {
+    $addons = VnpostCatalog::decode(
+      $this->value($order, "field_so_addons"),
+      (float) $this->value($order, "field_so_cod"),
+      (float) $this->value($order, "field_so_insurance"),
+    );
+
+    $lines = [];
+
+    foreach ($addons as $code => $props) {
+      $definition = VnpostCatalog::ADDONS[$code] ?? ["label" => "", "props" => []];
+      $values = [];
+
+      foreach ($props as $prop => $value) {
+        $values[] = ($definition["props"][$prop]["label"] ?? $prop) . ": " . $value;
+      }
+
+      $line = trim($code . " - " . $definition["label"], " -");
+      $lines[] = $values === [] ? $line : $line . " (" . implode("; ", $values) . ")";
+    }
+
+    return $lines;
   }
 
   /**
